@@ -219,6 +219,15 @@ class PopView(QMainWindow):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
+            # Chạy stop trong thread riêng để tránh lag UI
+            import threading
+            def stop_services():
+                if self.controller:
+                    self.controller.stop()
+            
+            stop_thread = threading.Thread(target=stop_services, daemon=True)
+            stop_thread.start()
+            
             QMessageBox.information(self, "Thành công", "Đã đăng xuất thành công!")
             self.close()
     
@@ -400,8 +409,13 @@ class PopView(QMainWindow):
     
     def update_animation(self):
         """Update the sound wave animation"""
-        if hasattr(self, 'sound_wave_widget'):
-            self.sound_wave_widget.update_animation()
+        try:
+            if hasattr(self, 'sound_wave_widget') and self.sound_wave_widget is not None:
+                self.sound_wave_widget.update_animation()
+        except KeyboardInterrupt:
+            pass  # Người dùng Ctrl+C, animation sẽ tự dừng
+        except RuntimeError:
+            pass  # Widget đã bị xóa
     
     def speak_ui(self, text):
         """UI wrapper for speak function - delegated to controller."""
@@ -755,11 +769,17 @@ class PopView(QMainWindow):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            # Kết thúc phiên hiện tại - delegate to controller
-            if self.controller:
-                self.controller.stop()
+            # Chạy stop trong thread riêng để tránh lag UI
+            import threading
+            def stop_services():
+                if self.controller:
+                    self.controller.stop()
             
-            self.close()  # Đóng ứng dụng
+            stop_thread = threading.Thread(target=stop_services, daemon=True)
+            stop_thread.start()
+            
+            # Đóng UI ngay lập tức
+            self.close()
     
     def resizeEvent(self, event):
         """Xử lý khi cửa sổ thay đổi kích thước"""

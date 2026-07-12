@@ -3,6 +3,7 @@ import sqlite3
 from datetime import datetime
 
 from utils.logger import get_logger
+from utils.paths import get_database_path
 
 from .base_repository import BaseRepository
 
@@ -15,7 +16,7 @@ class ConversationDB(BaseRepository):
         if db_path:
             resolved = db_path
         else:
-            resolved = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conversations.db')
+            resolved = get_database_path()
         super().__init__(resolved)
         self.init_database()
     

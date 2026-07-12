@@ -23,7 +23,8 @@ def main():
         # Set application icon
         try:
             from PyQt6.QtGui import QIcon
-            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icon.png')
+            from utils.paths import resource_path
+            icon_path = resource_path('assets', 'icon.png')
             if os.path.exists(icon_path):
                 app.setWindowIcon(QIcon(icon_path))
             else:
@@ -162,33 +163,38 @@ def main():
         def on_login_success(username):
             nonlocal main_window
             print(f"Login successful: {username}")
-            
-            try:
-                # Import and run main application
-                import main
-                main_window = main.create_main_window(username)
-                
-                if main_window is None:
-                    return
-                
-                # Show main window with force methods
-                main_window.show()
-                main_window.raise_()
-                main_window.activateWindow()
-                main_window.setFocus()
-                
-                # Close login immediately
-                login_window.close()              
-            except ImportError as e:
-                print(f"Lỗi import: {e}")
-                import traceback
-                traceback.print_exc()
-                login_window.show()
-            except Exception as e:
-                print(f"Lỗi khởi tạo giao diện chính: {e}")
-                import traceback
-                traceback.print_exc()
-                login_window.show()
+
+            # Đóng login window NGAY LẬP TỨC để UI không bị đơ
+            login_window.hide()
+            login_window.close()
+            app.processEvents()
+
+            # Dùng QTimer.singleShot(0) để đẩy việc khởi tạo nặng
+            # vào event loop, tránh block main thread
+            def _init_main_window():
+                nonlocal main_window
+                try:
+                    import main
+                    main_window = main.create_main_window(username)
+
+                    if main_window is None:
+                        return
+
+                    main_window.show()
+                    main_window.raise_()
+                    main_window.activateWindow()
+                    main_window.setFocus()
+                    app.processEvents()
+                except ImportError as e:
+                    print(f"Lỗi import: {e}")
+                    import traceback
+                    traceback.print_exc()
+                except Exception as e:
+                    print(f"Lỗi khởi tạo giao diện chính: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            QTimer.singleShot(0, _init_main_window)
         
         # Bây giờ mới tạo login window với admin callback
          # Controller inject Service vào View

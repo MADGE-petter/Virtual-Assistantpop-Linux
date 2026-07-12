@@ -198,13 +198,23 @@ class TemperatureMonitor:
     def _read_nvidia_gpu_temp(self) -> Optional[float]:
         """Đọc nhiệt độ GPU NVIDIA qua NVML (nếu có)"""
         try:
-            from pynvml import (
-                NVML_TEMPERATURE_GPU,
-                nvmlDeviceGetCount,
-                nvmlDeviceGetHandleByIndex,
-                nvmlDeviceGetTemperature,
-                nvmlInit,
-            )
+            try:
+                from pynvml import (
+                    NVML_TEMPERATURE_GPU,
+                    nvmlDeviceGetCount,
+                    nvmlDeviceGetHandleByIndex,
+                    nvmlDeviceGetTemperature,
+                    nvmlInit,
+                )
+            except ImportError:
+                # Fallback to nvidia-ml-py (new package name)
+                from nvidia_ml_py import (
+                    NVML_TEMPERATURE_GPU,
+                    nvmlDeviceGetCount,
+                    nvmlDeviceGetHandleByIndex,
+                    nvmlDeviceGetTemperature,
+                    nvmlInit,
+                )
             nvmlInit()
             device_count = nvmlDeviceGetCount()
             if device_count > 0:
@@ -214,7 +224,7 @@ class TemperatureMonitor:
                 if 1 <= temp <= 105:
                     return float(temp)
         except ImportError:
-            pass  # pynvml chưa cài
+            pass  # Cả pynvml và nvidia-ml-py đều chưa cài
         except Exception as e:
             print(f"[NVML] Error: {e}")
         return None

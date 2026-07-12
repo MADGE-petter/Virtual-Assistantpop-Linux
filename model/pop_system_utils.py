@@ -5,22 +5,31 @@ import subprocess
 # ÂM LƯỢNG HỆ THỐNG
 # ===============================
 
+# Cache volume interface để tránh tạo COM object nhiều lần
+_volume_interface_cache = None
+
 def _get_volume_interface():
+    global _volume_interface_cache
+    if _volume_interface_cache is not None:
+        return _volume_interface_cache
+    
     from ctypes import POINTER, cast
 
     from comtypes import CLSCTX_ALL
     from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
-    devices = AudioUtilities.GetSpeakers()
-
-    interface = devices.Activate(
-        IAudioEndpointVolume._iid_,
-        CLSCTX_ALL,
-        None
-    )
-
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-    return volume
+    try:
+        devices = AudioUtilities.GetSpeakers()
+        interface = devices.Activate(
+            IAudioEndpointVolume._iid_,
+            CLSCTX_ALL,
+            None
+        )
+        _volume_interface_cache = cast(interface, POINTER(IAudioEndpointVolume))
+        return _volume_interface_cache
+    except Exception as e:
+        print(f"[ERROR] Failed to get volume interface: {e}")
+        raise
 
 
 def get_system_volume():
@@ -29,7 +38,8 @@ def get_system_volume():
         level = int(volume.GetMasterVolumeLevelScalar() * 100)
         return f"Âm lượng hiện tại {level}%"
     except Exception as e:
-        return f"Lỗi lấy âm lượng: {e}"
+        print(f"[ERROR] get_system_volume failed: {e}")
+        return "Không đọc được âm lượng"
 
 
 def set_system_volume(value):
@@ -41,6 +51,7 @@ def set_system_volume(value):
 
         return f"Đã đặt âm lượng {value}%"
     except Exception as e:
+        print(f"[ERROR] set_system_volume failed: {e}")
         return f"Lỗi âm lượng: {e}"
 
 

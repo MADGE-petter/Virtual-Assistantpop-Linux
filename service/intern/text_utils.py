@@ -31,22 +31,24 @@ def extract_domain(text: str) -> Optional[str]:
     if not text:
         return None
     
-    # Try explicit domain extraction
+    # Common domain mappings
+    domain_mappings = {
+        "google": "google.com",
+        "youtube": "youtube.com",
+        "facebook": "facebook.com",
+        "gmail": "gmail.com",
+        "github": "github.com",
+    }
+    
+    text_lower = text.lower().strip()
+    
+    # Try explicit domain extraction with "mở" or "truy cập"
     domain_match = re.search(
         r"(?:mở|truy cập)\s+(?:trang web)?\s*(\S+)",
         text, re.IGNORECASE
     )
     if domain_match:
         domain = domain_match.group(1).strip().lower()
-        
-        # Common domain mappings
-        domain_mappings = {
-            "google": "google.com",
-            "youtube": "youtube.com",
-            "facebook": "facebook.com",
-            "gmail": "gmail.com",
-            "github": "github.com",
-        }
         
         if domain in domain_mappings:
             domain = domain_mappings[domain]
@@ -55,6 +57,11 @@ def extract_domain(text: str) -> Optional[str]:
             domain = f"https://{domain}"
         
         return domain
+    
+    # Fallback: nếu text chỉ chứa tên website (vd: "youtube", "google")
+    for name, url in domain_mappings.items():
+        if name in text_lower:
+            return f"https://{url}"
     
     return None
 

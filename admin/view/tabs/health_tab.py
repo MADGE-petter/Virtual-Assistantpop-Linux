@@ -28,23 +28,45 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from admin.view.styles import BUTTON_BLUE, BUTTON_GREEN, TABLE_WIDGET
+from admin.view.styles import (
+    BUTTON_PRIMARY,
+    BUTTON_SUCCESS,
+    TABLE_WIDGET,
+    SECTION_TITLE,
+    SECTION_SUBTITLE,
+    GROUP_BOX,
+    CARD_FRAME,
+    BG_CARD,
+    BG_DARK,
+    BORDER,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    TEXT_MUTED,
+    PRIMARY,
+    SUCCESS,
+    WARNING,
+    DANGER,
+    INFO,
+    ACCENT,
+)
 from admin.view.tabs.base_tab import BaseTab
 from database.admin_repository import AdminRepository
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-CARD_FRAME_STYLE = """
-QFrame {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(0, 255, 170, 0.18);
+CARD_FRAME_STYLE = f"""
+QFrame {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER};
     border-radius: 12px;
     padding: 14px;
-}
-QLabel {
-    color: #ffffff;
-}
+}}
+QLabel {{
+    color: {TEXT_PRIMARY};
+    background: transparent;
+    border: none;
+}}
 """
 
 
@@ -73,8 +95,8 @@ class HealthTab(BaseTab):
         layout = QVBoxLayout(container)
 
         # === HEADER & MODE SELECTOR ===
-        title_label = QLabel("Bảng điều khiển sức khỏe")
-        title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #00ffaa;")
+        title_label = QLabel("💚 Sức khỏe hệ thống")
+        title_label.setStyleSheet(SECTION_TITLE)
         title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         mode_frame = QFrame()
@@ -82,18 +104,21 @@ class HealthTab(BaseTab):
         mode_layout = QHBoxLayout(mode_frame)
         mode_layout.setContentsMargins(12, 12, 12, 12)
         mode_layout.setSpacing(10)
-        
-        self.system_btn = QPushButton("Sức khỏe hệ thống")
+
+        self.system_btn = QPushButton("  Sức khỏe hệ thống")
         self.system_btn.setCheckable(True)
         self.system_btn.setChecked(True)
+        self.system_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.system_btn.clicked.connect(lambda: self.switch_mode('system'))
-        
-        self.user_btn = QPushButton("Phân tích người dùng")
+
+        self.user_btn = QPushButton("  Phân tích người dùng")
         self.user_btn.setCheckable(True)
+        self.user_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.user_btn.clicked.connect(lambda: self.switch_mode('user'))
 
-        self.refresh_btn = QPushButton("🔄 Làm mới")
-        self.refresh_btn.setStyleSheet(BUTTON_BLUE)
+        self.refresh_btn = QPushButton("  Làm mới")
+        self.refresh_btn.setStyleSheet(BUTTON_PRIMARY)
+        self.refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.refresh_btn.clicked.connect(self.load_data)
 
         mode_layout.addWidget(self.system_btn)
@@ -102,35 +127,37 @@ class HealthTab(BaseTab):
         mode_layout.addWidget(self.refresh_btn)
 
         self._update_mode_buttons('system')
-        
+
         # === MODE 1: SYSTEM HEALTH ===
         self.system_frame = QGroupBox("Sức khỏe hệ thống - Chỉ số thời gian thực")
+        self.system_frame.setStyleSheet(GROUP_BOX)
         system_layout = QGridLayout(self.system_frame)
+        system_layout.setSpacing(16)
+        system_layout.setContentsMargins(16, 20, 16, 16)
 
-        self.cpu_label = QLabel("CPU: --%")
-        self.cpu_bar = QProgressBar()
-        self.cpu_bar.setMaximum(100)
+        # CPU Card
+        cpu_card = self._make_metric_card("CPU", "0%", DANGER, "#ef4444")
+        self.cpu_value_label = cpu_card.findChild(QLabel, "value")
+        self.cpu_bar = cpu_card.findChild(QProgressBar, "bar")
+        system_layout.addWidget(cpu_card, 0, 0)
 
-        self.ram_label = QLabel("RAM: --%")
-        self.ram_bar = QProgressBar()
-        self.ram_bar.setMaximum(100)
+        # RAM Card
+        ram_card = self._make_metric_card("RAM", "0%", INFO, "#3b82f6")
+        self.ram_value_label = ram_card.findChild(QLabel, "value")
+        self.ram_bar = ram_card.findChild(QProgressBar, "bar")
+        system_layout.addWidget(ram_card, 0, 1)
 
-        self.disk_label = QLabel("Disk: --%")
-        self.disk_bar = QProgressBar()
-        self.disk_bar.setMaximum(100)
+        # Disk Card
+        disk_card = self._make_metric_card("Disk", "0%", WARNING, "#f59e0b")
+        self.disk_value_label = disk_card.findChild(QLabel, "value")
+        self.disk_bar = disk_card.findChild(QProgressBar, "bar")
+        system_layout.addWidget(disk_card, 1, 0)
 
-        self.temp_label = QLabel("Nhiệt độ: --°C")
-        self.temp_bar = QProgressBar()
-        self.temp_bar.setMaximum(100)
-
-        system_layout.addWidget(self.cpu_label, 0, 0)
-        system_layout.addWidget(self.cpu_bar, 0, 1)
-        system_layout.addWidget(self.ram_label, 1, 0)
-        system_layout.addWidget(self.ram_bar, 1, 1)
-        system_layout.addWidget(self.disk_label, 2, 0)
-        system_layout.addWidget(self.disk_bar, 2, 1)
-        system_layout.addWidget(self.temp_label, 3, 0)
-        system_layout.addWidget(self.temp_bar, 3, 1)
+        # Temperature Card
+        temp_card = self._make_metric_card("Nhiệt độ", "0°C", ACCENT, "#06b6d4")
+        self.temp_value_label = temp_card.findChild(QLabel, "value")
+        self.temp_bar = temp_card.findChild(QProgressBar, "bar")
+        system_layout.addWidget(temp_card, 1, 1)
 
         # === MODE 2: USER ANALYTICS ===
         self.user_frame = QGroupBox("Phân tích người dùng")
@@ -152,7 +179,7 @@ class HealthTab(BaseTab):
         user_select_layout.addStretch()
         
         # User metrics
-        metrics_frame = QGroupBox("📊 Thống kê người dùng")
+        metrics_frame = QGroupBox(" Thống kê người dùng")
         metrics_frame.setStyleSheet(CARD_FRAME_STYLE)
         metrics_layout = QHBoxLayout(metrics_frame)
         metrics_layout.setSpacing(12)
@@ -168,7 +195,7 @@ class HealthTab(BaseTab):
         metrics_layout.addWidget(self._create_metric_card("Active Time", self.active_time_label))
         
         # App usage table
-        apps_frame = QGroupBox("🖥️ App Usage")
+        apps_frame = QGroupBox(" App Usage")
         apps_layout = QVBoxLayout(apps_frame)
         
         self.apps_table = QTableWidget()
@@ -186,38 +213,14 @@ class HealthTab(BaseTab):
         
         apps_layout.addWidget(self.apps_table)
         
-        # Health trends section for selected user / system view
-        trends_frame = QGroupBox("📈 Xu hướng sức khỏe (7 ngày)")
-        trends_layout = QGridLayout(trends_frame)
-        self.trends_labels = {
-            'avg_cpu': QLabel("--%"),
-            'avg_ram': QLabel("--%"),
-            'avg_disk': QLabel("--%"),
-            'max_cpu': QLabel("--%"),
-            'max_ram': QLabel("--%"),
-            'avg_temp': QLabel("--°C"),
-        }
-        trends_layout.addWidget(QLabel("CPU TB:"), 0, 0)
-        trends_layout.addWidget(self.trends_labels['avg_cpu'], 0, 1)
-        trends_layout.addWidget(QLabel("RAM TB:"), 1, 0)
-        trends_layout.addWidget(self.trends_labels['avg_ram'], 1, 1)
-        trends_layout.addWidget(QLabel("Disk TB:"), 2, 0)
-        trends_layout.addWidget(self.trends_labels['avg_disk'], 2, 1)
-        trends_layout.addWidget(QLabel("CPU max:"), 3, 0)
-        trends_layout.addWidget(self.trends_labels['max_cpu'], 3, 1)
-        trends_layout.addWidget(QLabel("RAM max:"), 4, 0)
-        trends_layout.addWidget(self.trends_labels['max_ram'], 4, 1)
-        trends_layout.addWidget(QLabel("Nhiệt độ TB:"), 5, 0)
-        trends_layout.addWidget(self.trends_labels['avg_temp'], 5, 1)
-        user_layout.addWidget(trends_frame)
-        
         user_layout.addWidget(user_select_frame)
         user_layout.addWidget(metrics_frame)
         user_layout.addWidget(apps_frame)
         
         # Refresh button
-        refresh_btn = QPushButton("🔄 Làm mới")
-        refresh_btn.setStyleSheet(BUTTON_BLUE)
+        refresh_btn = QPushButton("  Làm mới dữ liệu")
+        refresh_btn.setStyleSheet(BUTTON_PRIMARY)
+        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         refresh_btn.clicked.connect(self.load_data)
         
         # ===== ADD TO CONTAINER =====
@@ -272,7 +275,7 @@ class HealthTab(BaseTab):
             if hasattr(self, 'user_combo'):
                 user_id = self.user_combo.itemData(self.user_combo.currentIndex())
                 username = self.user_combo.itemText(self.user_combo.currentIndex())
-                clean_username = username.replace("👤 ", "").strip()
+                clean_username = username.replace("  ", "").strip()
 
                 if user_id is not None:
                     self._load_user_metrics(user_id, clean_username)
@@ -333,22 +336,22 @@ class HealthTab(BaseTab):
                 ram = health_data.get('ram_percent', 0)
                 disk = health_data.get('disk_percent', 0)
                 temp = health_data.get('temperature', 0)
-                
+
                 self.log(f"Updating UI - CPU: {cpu}, RAM: {ram}, Disk: {disk}, Temp: {temp}")
-                
-                self.cpu_label.setText(f"CPU: {cpu:.1f}%")
+
+                self.cpu_value_label.setText(f"{cpu:.1f}%")
                 self.cpu_bar.setValue(int(cpu))
                 self._set_bar_color(self.cpu_bar, cpu)
-                
-                self.ram_label.setText(f"RAM: {ram:.1f}%")
+
+                self.ram_value_label.setText(f"{ram:.1f}%")
                 self.ram_bar.setValue(int(ram))
                 self._set_bar_color(self.ram_bar, ram)
-                
-                self.disk_label.setText(f"Disk: {disk:.1f}%")
+
+                self.disk_value_label.setText(f"{disk:.1f}%")
                 self.disk_bar.setValue(int(disk))
                 self._set_bar_color(self.disk_bar, disk)
-                
-                self.temp_label.setText(f"Nhiệt độ: {temp:.1f}°C")
+
+                self.temp_value_label.setText(f"{temp:.1f}°C")
                 self.temp_bar.setValue(int(min(temp, 100)))
                 self._set_bar_color(self.temp_bar, temp, threshold=70)
                 
@@ -362,43 +365,90 @@ class HealthTab(BaseTab):
             traceback.print_exc()
     
     def _load_health_trends(self, username=None):
-        """Load health trends for last 7 days"""
-        try:
-            from model.usage_tracker import UsageTracker
-            tracker = UsageTracker()
-            
-            # Clean username by removing icons
-            user_name = (username or "user").replace(" ", "").replace(" ", "")
-            trends = tracker.get_health_trends(days=7, user_name=user_name)
-            
-            if trends:
-                self.trends_labels['avg_cpu'].setText(f"{trends.get('avg_cpu', 0):.1f}%")
-                self.trends_labels['avg_ram'].setText(f"{trends.get('avg_ram', 0):.1f}%")
-                self.trends_labels['avg_disk'].setText(f"{trends.get('avg_disk', 0):.1f}%")
-                self.trends_labels['max_cpu'].setText(f"{trends.get('max_cpu', 0):.1f}%")
-                self.trends_labels['max_ram'].setText(f"{trends.get('max_ram', 0):.1f}%")
-                avg_temp = trends.get('avg_temp')
-                self.trends_labels['avg_temp'].setText(f"{avg_temp:.1f}°C" if avg_temp else "--°C")
-            else:
-                self.trends_labels['avg_cpu'].setText("--%")
-                self.trends_labels['avg_ram'].setText("--%")
-                self.trends_labels['avg_disk'].setText("--%")
-                self.trends_labels['max_cpu'].setText("--%")
-                self.trends_labels['max_ram'].setText("--%")
-                self.trends_labels['avg_temp'].setText("--°C")
-                    
-        except Exception as e:
-            self.log(f"Health trends error: {e}")
+        """Load health trends for last 7 days - DEPRECATED, UI removed"""
+        pass
     
     def _set_bar_color(self, bar, value, threshold=80):
         """Set progress bar color based on value"""
         if value < threshold * 0.5:
-            bar.setStyleSheet("QProgressBar::chunk { background-color: #27ae60; }")  # Green
+            bar.setStyleSheet(f"""
+                QProgressBar {{ background-color: {BG_DARK}; border: none; border-radius: 3px; }}
+                QProgressBar::chunk {{ background-color: #10b981; border-radius: 3px; }}
+            """)  # Green
         elif value < threshold:
-            bar.setStyleSheet("QProgressBar::chunk { background-color: #f39c12; }")  # Yellow
+            bar.setStyleSheet(f"""
+                QProgressBar {{ background-color: {BG_DARK}; border: none; border-radius: 3px; }}
+                QProgressBar::chunk {{ background-color: #f59e0b; border-radius: 3px; }}
+            """)  # Yellow
         else:
-            bar.setStyleSheet("QProgressBar::chunk { background-color: #e74c3c; }")  # Red
-    
+            bar.setStyleSheet(f"""
+                QProgressBar {{ background-color: {BG_DARK}; border: none; border-radius: 3px; }}
+                QProgressBar::chunk {{ background-color: #ef4444; border-radius: 3px; }}
+            """)  # Red
+
+    def _make_metric_card(self, title, value_text, bar_color, accent):
+        """Create a metric card with title, value, and progress bar"""
+        card = QFrame()
+        card.setObjectName("metricCard")
+        card.setStyleSheet(f"""
+            QFrame#metricCard {{
+                background-color: {BG_CARD};
+                border: 1px solid {BORDER};
+                border-radius: 14px;
+                padding: 16px;
+            }}
+            QFrame#metricCard:hover {{
+                border: 1px solid {accent};
+            }}
+        """)
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(10)
+        card_layout.setContentsMargins(14, 14, 14, 14)
+
+        # Title row
+        title_row = QHBoxLayout()
+        title_row.setSpacing(6)
+
+        dot = QLabel("●")
+        dot.setStyleSheet(f"color: {accent}; font-size: 10px; background: transparent; border: none;")
+        title_row.addWidget(dot)
+
+        title_label = QLabel(title)
+        title_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; font-weight: 500; background: transparent; border: none;")
+        title_row.addWidget(title_label)
+        title_row.addStretch()
+
+        card_layout.addLayout(title_row)
+
+        # Value
+        value_label = QLabel(value_text)
+        value_label.setObjectName("value")
+        value_label.setStyleSheet(f"color: {accent}; font-size: 28px; font-weight: 700; background: transparent; border: none;")
+        card_layout.addWidget(value_label)
+
+        # Progress bar
+        bar = QProgressBar()
+        bar.setObjectName("bar")
+        bar.setMaximum(100)
+        bar.setValue(0)
+        bar.setTextVisible(False)
+        bar.setFixedHeight(6)
+        bar.setStyleSheet(f"""
+            QProgressBar {{
+                background-color: {BG_DARK};
+                border: none;
+                border-radius: 3px;
+                min-height: 6px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {bar_color};
+                border-radius: 3px;
+            }}
+        """)
+        card_layout.addWidget(bar)
+
+        return card
+
     def _create_metric_card(self, title, value_label):
         card = QFrame()
         card.setStyleSheet(CARD_FRAME_STYLE)
@@ -416,8 +466,8 @@ class HealthTab(BaseTab):
         return card
     
     def _update_mode_buttons(self, active_mode):
-        active_style = BUTTON_GREEN
-        inactive_style = BUTTON_BLUE
+        active_style = BUTTON_SUCCESS
+        inactive_style = BUTTON_PRIMARY
 
         if active_mode == 'system':
             self.system_btn.setChecked(True)
@@ -497,10 +547,10 @@ class HealthTab(BaseTab):
             self.user_combo.blockSignals(True)
 
             self.user_combo.clear()
-            self.user_combo.addItem("📊 Tổng quan hệ thống", None)
+            self.user_combo.addItem(" Tổng quan hệ thống", None)
 
             for user_id, username in users:
-                self.user_combo.addItem(f"👤 {username}", user_id)
+                self.user_combo.addItem(f" {username}", user_id)
 
             self.user_combo.blockSignals(False)
 
@@ -526,7 +576,7 @@ class HealthTab(BaseTab):
 
         # Load user analytics when user changes
         if self.user_frame.isVisible():
-            clean_username = name.replace("👤 ", "").strip()
+            clean_username = name.replace("  ", "").strip()
             self._load_user_metrics(user_id, clean_username)
     
     def _load_user_metrics(self, user_id: int, username: str):
@@ -633,7 +683,7 @@ class HealthTab(BaseTab):
             tracker = UsageTracker()
             
             # Clean username by removing icons
-            clean_username = username.replace("👤 ", "").strip()
+            clean_username = username.replace("  ", "").strip()
             
             # Debug: try different username variations
             print(f"[HealthTab] Looking for user: '{clean_username}'")

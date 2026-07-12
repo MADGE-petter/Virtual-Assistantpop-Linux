@@ -23,12 +23,20 @@ from PyQt6.QtWidgets import (
 )
 
 from admin.view.styles import (
-    BUTTON_BLUE,
-    BUTTON_GREEN,
-    BUTTON_ORANGE,
-    BUTTON_RED,
+    BUTTON_PRIMARY,
+    BUTTON_SUCCESS,
+    BUTTON_WARNING,
+    BUTTON_DANGER,
     DIALOG_MAIN,
     TABLE_WIDGET,
+    SECTION_TITLE,
+    SECTION_SUBTITLE,
+    ONLINE_BADGE,
+    BG_CARD,
+    BORDER,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    TEXT_MUTED,
 )
 from admin.view.tabs.base_tab import BaseTab
 from database.admin_repository import AdminRepository
@@ -42,48 +50,33 @@ class UsersTab(BaseTab):
     
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+
+        # Section title
+        title = QLabel("Quản lý người dùng")
+        title.setStyleSheet(SECTION_TITLE)
+        layout.addWidget(title)
+
         # Online users counter
-        self.online_label = QLabel("🟢 Online: 0 | ⚫ Offline: 0")
+        self.online_label = QLabel("Online: 0  |  Offline: 0")
+        self.online_label.setStyleSheet(ONLINE_BADGE)
         layout.addWidget(self.online_label)
-        
-        # Users table - thêm cột Status với màu
+
+        # Users table
         self.users_table = self.create_table(
-            5, ["Username", "Password Hash", "Created Date", "Status", "Last Active"], TABLE_WIDGET
+            5, ["Username", "Password Hash", "Ngày tạo", "Trạng thái", "Hoạt động cuối"], TABLE_WIDGET
         )
         layout.addWidget(self.users_table)
-        
+
         # Control buttons
-        button_frame = QFrame()
-        button_layout = QHBoxLayout(button_frame)
-        
-        # Add user button
-        add_user_btn = QPushButton("Thêm User")
-        add_user_btn.setStyleSheet(BUTTON_GREEN)
-        add_user_btn.clicked.connect(self.add_user)
-        button_layout.addWidget(add_user_btn)
-        
-        # Delete user button
-        delete_user_btn = QPushButton("Xóa User")
-        delete_user_btn.setStyleSheet(BUTTON_RED)
-        delete_user_btn.clicked.connect(self.delete_user)
-        button_layout.addWidget(delete_user_btn)
-        
-        # Reset password button
-        reset_pwd_btn = QPushButton("Reset Password")
-        reset_pwd_btn.setStyleSheet(BUTTON_ORANGE)
-        reset_pwd_btn.clicked.connect(self.reset_password)
-        button_layout.addWidget(reset_pwd_btn)
-        
-        button_layout.addStretch()
-        
-        # Refresh button
-        refresh_btn = QPushButton("Làm mới")
-        refresh_btn.setStyleSheet(BUTTON_BLUE)
-        refresh_btn.clicked.connect(self.load_data)
-        button_layout.addWidget(refresh_btn)
-        
-        layout.addWidget(button_frame)
+        buttons = [
+            ("➕  Thêm User", BUTTON_SUCCESS, self.add_user),
+            ("🗑️  Xóa User", BUTTON_DANGER, self.delete_user),
+            ("🔑  Reset Password", BUTTON_WARNING, self.reset_password),
+            ("  Làm mới", BUTTON_PRIMARY, self.load_data),
+        ]
+        layout.addWidget(self.create_button_frame(buttons))
     
     def load_data(self):
         """Load users from database với trạng thái online/offline"""
@@ -136,7 +129,7 @@ class UsersTab(BaseTab):
                     self.users_table.setItem(row, 2, QTableWidgetItem(created_date))
 
                     # Status with color
-                    status_item = QTableWidgetItem("🟢 Online" if is_online else "⚫ Offline")
+                    status_item = QTableWidgetItem("Online" if is_online else "Offline")
                     if is_online:
                         status_item.setBackground(Qt.GlobalColor.darkGreen)
                         status_item.setForeground(Qt.GlobalColor.white)
@@ -154,7 +147,7 @@ class UsersTab(BaseTab):
             conn.close()
 
             # Update counter label
-            self.online_label.setText(f"🟢 Online: {online_count} | ⚫ Offline: {offline_count}")
+            self.online_label.setText(f"Online: {online_count} | Offline: {offline_count}")
 
             self.log(f"Loaded {len(users)} users ({online_count} online)")
         except Exception as e:

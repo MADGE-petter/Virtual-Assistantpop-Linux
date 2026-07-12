@@ -17,10 +17,10 @@ class HabitHandler:
         self._init_tracker()
     
     def _init_tracker(self):
-        """Khởi tạo habit tracker"""
+        """Khởi tạo habit tracker - dùng singleton để tránh khởi tạo lại"""
         try:
-            from controller.habit_tracker import HabitTracker
-            self.habit_tracker = HabitTracker()
+            from controller.habit_tracker import get_habit_tracker
+            self.habit_tracker = get_habit_tracker()
         except Exception as e:
             print(f"[HabitHandler] Error init tracker: {e}")
     

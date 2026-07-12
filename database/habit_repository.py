@@ -54,6 +54,22 @@ class HabitRepository(BaseRepository):
         except Exception:
             return []
 
+    def get_today_app_count(self, user_id: int, app_name: str) -> int:
+        """Đếm số lần mở 1 app trong ngày hôm nay."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                today_str = datetime.now().strftime('%Y-%m-%d')
+                cursor.execute("""
+                    SELECT COUNT(*) FROM app_usage_logs
+                    WHERE maNguoiDung = ? AND tenUngDung = ?
+                      AND (ngay = ? OR DATE(thoiGianMo) = ?)
+                """, (user_id, app_name, today_str, today_str))
+                result = cursor.fetchone()
+                return result[0] if result else 0
+        except Exception:
+            return 0
+
     def get_recent_app_usage_by_day(self, user_id: int, days: int = 7) -> List[Tuple]:
         """Get app usage per day in the last N days."""
         try:
@@ -82,10 +98,10 @@ class HabitRepository(BaseRepository):
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT id, soLanGoiY, doTinCay, lanThayDoiCuoi
+                    SELECT id, tanSuat, doTinCay, lanQuanSatCuoi
                     FROM user_habits
-                    WHERE maNguoiDung = ? AND loaiThoiQuen = ? AND mucTieu = ?
-                      AND thoiGianTrongNgay = ? AND loaiNgay = ?
+                    WHERE maNguoiDung = ? AND loaiThoiQuen = ? AND tenMucTieu = ?
+                      AND gioTrongNgay = ? AND ngayTrongTuan = ?
                 """, (user_id, habit_type, target, time_bucket, day_type))
                 return cursor.fetchone()
         except Exception:
@@ -99,7 +115,7 @@ class HabitRepository(BaseRepository):
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE user_habits
-                    SET soLanGoiY = ?, doTinCay = ?, lanThayDoiCuoi = ?
+                    SET tanSuat = ?, doTinCay = ?, lanQuanSatCuoi = ?
                     WHERE id = ?
                 """, (frequency, confidence, last_observed, habit_id))
                 conn.commit()
@@ -115,8 +131,8 @@ class HabitRepository(BaseRepository):
                 cursor = conn.cursor()
                 cursor.execute("""
                     INSERT INTO user_habits
-                    (maNguoiDung, loaiThoiQuen, mucTieu, thoiGianTrongNgay, 
-                     loaiNgay, soLanGoiY, doTinCay, lanThayDoiCuoi)
+                    (maNguoiDung, loaiThoiQuen, tenMucTieu, gioTrongNgay, 
+                     ngayTrongTuan, tanSuat, doTinCay, lanQuanSatCuoi)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (user_id, habit_type, target, time_bucket, day_type, 
                       frequency, confidence, datetime.now()))
@@ -131,7 +147,7 @@ class HabitRepository(BaseRepository):
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT mucTieu, loaiThoiQuen, soLanGoiY, doTinCay, lanThayDoiCuoi
+                    SELECT tenMucTieu, loaiThoiQuen, tanSuat, doTinCay, lanQuanSatCuoi
                     FROM user_habits
                     WHERE maNguoiDung = ? AND doTinCay >= ?
                     ORDER BY doTinCay DESC

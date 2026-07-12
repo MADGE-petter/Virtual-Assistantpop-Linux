@@ -166,6 +166,8 @@ class ConversationService:
                 speak_callback(result_text)
             else:
                 self.audio.speak(result_text)
+            # Không cần wait_until_speaking_done() ở đây vì main loop đã có
+            # cơ chế chờ is_speaking trước khi gọi listen()
         
         # 7. Save ONLY completed exchanges (atomic at the end)
         if should_save and self._memory_service and result_text:

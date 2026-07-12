@@ -63,7 +63,17 @@ class HabitTracker:
             self._repo.insert_app_usage_log(maNguoiDung, normalized_name, now)
 
             # Step 3: Cross-cutting concern - activity tracking (via Service)
-            self._alerts.update_last_activity(maNguoiDung, normalized_name)
+            # Bọc riêng để không ảnh hưởng đến các bước khác
+            try:
+                if hasattr(self._alerts, 'update_last_activity'):
+                    self._alerts.update_last_activity(maNguoiDung, normalized_name)
+            except Exception:
+                pass  # Không quan trọng nếu alert service không hỗ trợ
+            
+            # Step 4: Learn/update habit (bao gồm burst detection)
+            time_bucket = now.hour
+            day_type = now.weekday()
+            self._learning.update_habit(maNguoiDung, 'app_usage', normalized_name, time_bucket, day_type)
 
         except Exception as e:
             self._log_error('log_app_opened', e)
@@ -83,6 +93,36 @@ class HabitTracker:
         except Exception as e:
             self._log_error('get_suggestions', e)
             return []
+    
+    def get_user_habits(self, user_id: int, doTinCayToiThieu: float = 0.0) -> List:
+        """Lấy danh sách thói quen của user (dùng cho ProactiveService).
+        
+        Trả về: List[(loaiThoiQuen, tenMucTieu, gio, ngay, tanSuat, doTinCay)]
+        """
+        try:
+            habits_raw = self._repo.get_user_habits_raw(user_id, doTinCayToiThieu)
+            result = []
+            for habit in habits_raw:
+                # tenMucTieu, loaiThoiQuen, tanSuat, doTinCay, lanQuanSatCuoi
+                target = habit[0]
+                habit_type = habit[1]
+                frequency = habit[2]
+                confidence = habit[3]
+                last_updated = habit[4]
+                
+                # Trích xuất giờ và ngày từ thời gian cuối
+                hour = last_updated.hour if hasattr(last_updated, 'hour') else 12
+                day = last_updated.weekday() if hasattr(last_updated, 'weekday') else 0
+                
+                result.append((habit_type, target, hour, day, frequency, confidence))
+            return result
+        except Exception as e:
+            self._log_error('get_user_habits', e)
+            return []
+    
+    def suggest_based_on_habits(self, user_id: int) -> List[Dict]:
+        """Alias cho get_suggestions - dùng bởi ProactiveService"""
+        return self.get_suggestions(user_id)
     
     # ========== INTELLIGENT ALERT SYSTEM ==========
     

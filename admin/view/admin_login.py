@@ -62,81 +62,77 @@ class AdminLoginView(QDialog):
         layout.setSpacing(35)  # Giống login thường
         layout.setContentsMargins(50, 80, 50, 80)  # Giống login thường
         
-        # Title - giống hệt login thường
+        # Title
         title = QLabel("Admin Assistant")
         title.setStyleSheet("""
             QLabel {
-                color: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
-                               stop:0 #00ffaa, stop:1 #00ccff);
+                color: #818cf8;
                 font-size: 32px;
-                font-weight: 300;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-weight: 700;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
                 text-align: center;
                 padding: 20px;
+                letter-spacing: 1px;
             }
         """)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
-        
-        # Password field - giống hệt login thường
+
+        # Password field
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText("Mật khẩu admin")
         self.password_input.setStyleSheet("""
             QLineEdit {
-                background: rgba(25, 25, 45, 180);
-                border: 1px solid rgba(0, 255, 136, 40);
+                background-color: #1e2030;
+                border: 1px solid #1e293b;
                 border-radius: 10px;
-                padding: 12px;
-                color: rgba(255, 255, 255, 240);
+                padding: 14px;
+                color: #e2e8f0;
                 font-size: 15px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
             }
             QLineEdit:focus {
-                border: 2px solid rgba(0, 255, 136, 80);
-                background: rgba(25, 25, 45, 220);
-                color: rgba(255, 255, 255, 240);
+                border: 2px solid #6366f1;
+                background-color: #1e2030;
             }
         """)
         layout.addWidget(self.password_input)
-        
-        # Login button - giống hệt login thường
+
+        # Login button
         login_btn = QPushButton("Đăng nhập")
         login_btn.setStyleSheet("""
             QPushButton {
-                background: rgba(0, 255, 136, 20);
-                border: 1px solid rgba(0, 255, 136, 50);
+                background-color: #6366f1;
+                border: none;
                 border-radius: 10px;
-                padding: 12px 25px;
-                color: rgba(0, 255, 136, 240);
+                padding: 14px 25px;
+                color: white;
                 font-size: 15px;
                 font-weight: 600;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
             }
             QPushButton:hover {
-                background: rgba(0, 255, 136, 40);
-                border: 1px solid rgba(0, 255, 136, 80);
-                color: rgba(0, 255, 136, 255);
+                background-color: #4f46e5;
             }
             QPushButton:pressed {
-                background: rgba(0, 255, 136, 60);
-                color: rgba(0, 255, 136, 255);
+                background-color: #4338ca;
             }
         """)
         login_btn.clicked.connect(self.admin_login)
         layout.addWidget(login_btn)
-        
+
         # Status label
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet("""
             QLabel {
-                color: #ff6b6b;
+                color: #ef4444;
                 font-size: 14px;
                 margin-top: 10px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
             }
         """)
         layout.addWidget(self.status_label)
@@ -201,50 +197,46 @@ class AdminLoginView(QDialog):
         self.status_label.setText("")
 
     def setup_style(self):
-        """Apply style exactly like login view"""
+        """Apply modern dark theme"""
         self.setStyleSheet("""
             QDialog {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #0f0f1a, stop:1 #1a1a2a);
+                background-color: #0f1117;
             }
             QLineEdit {
-                background: rgba(25, 25, 45, 180);
-                border: 1px solid rgba(0, 255, 136, 40);
+                background-color: #1e2030;
+                border: 1px solid #1e293b;
                 border-radius: 10px;
                 padding: 12px;
-                color: rgba(255, 255, 255, 240);
+                color: #e2e8f0;
                 font-size: 15px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
             }
             QLineEdit:focus {
-                border: 2px solid rgba(0, 255, 136, 80);
-                background: rgba(25, 25, 45, 220);
+                border: 2px solid #6366f1;
+                background-color: #1e2030;
             }
             QPushButton {
-                background: rgba(0, 255, 136, 20);
-                border: 1px solid rgba(0, 255, 136, 50);
+                background-color: #6366f1;
+                border: none;
                 border-radius: 10px;
                 padding: 12px 25px;
-                color: rgba(0, 255, 136, 240);
+                color: white;
                 font-size: 15px;
                 font-weight: 600;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
             }
             QPushButton:hover {
-                background: rgba(0, 255, 136, 40);
-                border: 1px solid rgba(0, 255, 136, 80);
-                color: rgba(0, 255, 136, 255);
+                background-color: #4f46e5;
             }
             QPushButton:pressed {
-                background: rgba(0, 255, 136, 60);
-                color: rgba(0, 255, 136, 255);
+                background-color: #4338ca;
             }
             QLabel {
-                color: rgba(255, 255, 255, 220);
+                color: #e2e8f0;
                 font-size: 15px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
                 padding: 5px;
             }
         """)

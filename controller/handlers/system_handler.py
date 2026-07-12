@@ -39,27 +39,27 @@ class SystemHandler(BaseHandler):
             
             # Volume control with set/adjust/increase/decrease
             if "âm lượng" in text_lower:
-                # Xử lý tăng/giảm trước
-                if any(k in text_lower for k in ["tăng", "to hơn", "lớn hơn"]):
-                    try:
+                try:
+                    target_volume = self._extract_number(text)
+                    if target_volume is not None:
+                        return set_system_volume(target_volume)
+                    if any(k in text_lower for k in ["tăng", "to hơn", "lớn hơn"]):
                         current = self._extract_number(get_system_volume(), 50)
                         new_val = min(100, current + 20)
                         return set_system_volume(new_val)
-                    except:
-                        return set_system_volume(70)
-                
-                if any(k in text_lower for k in ["giảm", "nhỏ hơn", "bé hơn", "nhỏ lại"]):
-                    try:
+                    
+                    if any(k in text_lower for k in ["giảm", "nhỏ hơn", "bé hơn", "nhỏ lại", "xuống"]):
                         current = self._extract_number(get_system_volume(), 50)
                         new_val = max(0, current - 20)
                         return set_system_volume(new_val)
-                    except:
-                        return set_system_volume(30)
-                
-                # Đặt/chỉnh giá trị cụ thể
-                return self._handle_numeric_control(
-                    text_lower, text, set_system_volume, get_system_volume, "âm lượng"
-                )
+                    
+                    # Đặt/chỉnh giá trị cụ thể
+                    return self._handle_numeric_control(
+                        text_lower, text, set_system_volume, get_system_volume, "âm lượng"
+                    )
+                except Exception as e:
+                    print(f"[ERROR] Volume control failed: {e}")
+                    return "Xin lỗi, không thể điều chỉnh âm lượng lúc này."
             
             if any(k in text_lower for k in ["độ sáng", "tăng sáng", "giảm sáng", "sáng hơn", "tối hơn"]):
                 return self._handle_brightness(text_lower, text, set_brightness, get_brightness)
@@ -125,6 +125,13 @@ class SystemHandler(BaseHandler):
     
     def _handle_brightness(self, text_lower, text, setter, getter):
         """Xử lý điều khiển độ sáng với tăng/giảm."""
+        # Trích xuất số từ text TRƯỚC để xử lý "tăng sáng lên X%" đúng cách
+        target_brightness = self._extract_number(text)
+        
+        if target_brightness is not None:
+            # Có số cụ thể: "tăng sáng lên 80%" hoặc "đặt độ sáng 80"
+            return setter(target_brightness)
+        
         if "tăng sáng" in text_lower or "sáng hơn" in text_lower:
             try:
                 current_num = self._extract_number(getter(), 50)

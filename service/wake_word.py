@@ -8,7 +8,7 @@ import speech_recognition as sr
 class WakeWordDetector:
 
     DEFAULT_WAKE_WORDS = [
-        "pop", "pop ơi", "alo", "hey pop","Alo"
+        "pop", "pop ơi", "alo", "hey pop", "Alo",
         "bốp", "bốp ơi", "bot", "bot ơi",
         "hello pop", "chào pop", "xin chào pop"
     ]

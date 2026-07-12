@@ -11,6 +11,10 @@ from typing import Dict, Optional
 class HabitLearningService:
     """Service for learning and updating habits"""
     
+    # Ngưỡng burst: nếu mở app >= BURST_THRESHOLD lần trong 1 ngày -> kích hoạt thói quen ngay
+    BURST_THRESHOLD = 6
+    BURST_CONFIDENCE_BOOST = 0.65  # Đưa confidence lên ngay mức cao
+    
     def __init__(self, repository):
         self.repo = repository
         self.half_life_days = 7
@@ -22,11 +26,54 @@ class HabitLearningService:
         decay_factor = 0.5 ** (days_inactive / self.half_life_days)
         return base_confidence * decay_factor
     
+    def _check_burst_usage(self, user_id: int, target: str) -> bool:
+        """Kiểm tra xem hôm nay user có mở app này >= BURST_THRESHOLD lần không.
+        
+        Nếu có, tự động boost confidence để kích hoạt thói quen ngay lập tức.
+        Returns: True nếu burst được phát hiện và đã boost.
+        """
+        try:
+            today_count = self.repo.get_today_app_count(user_id, target)
+            if today_count >= self.BURST_THRESHOLD:
+                # Tìm thói quen hiện có hoặc tạo mới với confidence cao
+                now = datetime.now()
+                time_bucket = now.hour
+                day_type = now.weekday()
+                
+                existing = self.repo.find_habit(user_id, 'app_usage', target, time_bucket, day_type)
+                
+                if existing:
+                    habit_id, old_freq, old_conf, last_seen = existing
+                    # Boost confidence lên BURST_CONFIDENCE_BOOST nếu chưa đạt
+                    if old_conf < self.BURST_CONFIDENCE_BOOST:
+                        new_conf = self.BURST_CONFIDENCE_BOOST
+                        self.repo.update_habit(habit_id, today_count, new_conf, now)
+                        print(f"[HabitLearning] BURST detected: '{target}' opened {today_count}x today, "
+                              f"confidence boosted {old_conf:.2f} -> {new_conf:.2f}")
+                        return True
+                else:
+                    # Tạo thói quen mới với confidence cao ngay
+                    self.repo.insert_habit(
+                        user_id, 'app_usage', target, time_bucket, day_type,
+                        frequency=today_count, confidence=self.BURST_CONFIDENCE_BOOST
+                    )
+                    print(f"[HabitLearning] BURST detected: NEW habit '{target}' created with "
+                          f"confidence {self.BURST_CONFIDENCE_BOOST} ({today_count}x today)")
+                    return True
+        except Exception as e:
+            print(f"[HabitLearning] Error checking burst: {e}")
+        return False
+    
     def update_habit(self, user_id: int, habit_type: str, target: str,
                      time_bucket: int, day_type: str) -> None:
-        """Update or create habit with temporal decay"""
+        """Update or create habit with temporal decay + burst detection"""
         try:
             now = datetime.now()
+            
+            # Kiểm tra burst usage trước (6 lần/ngày -> kích hoạt ngay)
+            burst_activated = self._check_burst_usage(user_id, target)
+            if burst_activated:
+                return  # Đã xử lý qua burst, không cần update thêm
             
             # Check if habit exists
             existing = self.repo.find_habit(user_id, habit_type, target, time_bucket, day_type)

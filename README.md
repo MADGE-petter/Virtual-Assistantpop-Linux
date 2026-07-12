@@ -10,7 +10,7 @@ Pop Assistant là một trợ lý ảo dành cho Windows được phát triển 
 
 ### Video
 
-<video controls src="1783873363106_66381167024278951_516732694922087015.mp4" title="Pop Assistant Demo"></video>
+<video controls src="1783873363106_66381167024278951_516732694922087015.mp4" title="Title"></video>
 
 ### Ảnh giao diện
 
@@ -20,12 +20,10 @@ Pop Assistant là một trợ lý ảo dành cho Windows được phát triển 
 
 #### Giám sát hệ thống
 
-![Thông tin phần cứng](<Ảnh chụp màn hình 2026-07-12 224924.png>)
-
+![Thông tin phần cứng](<Ảnh chụp màn hình 2026-07-12 224924-1.png>)
 #### Gợi ý ứng dụng
 
 ![Gợi ý](<Ảnh chụp màn hình 2026-07-12 224936.png>)
-
 ---
 
 ## Tính năng

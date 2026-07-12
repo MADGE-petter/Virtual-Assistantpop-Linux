@@ -25,16 +25,19 @@ from PyQt6.QtWidgets import (
 )
 
 from admin.view.styles import (
-    BUTTON_BLUE,
-    BUTTON_GREEN,
-    BUTTON_ORANGE,
-    BUTTON_RED,
+    BUTTON_PRIMARY,
+    BUTTON_SUCCESS,
+    BUTTON_WARNING,
+    BUTTON_DANGER,
     DIALOG_CONVERSATION,
     DIALOG_MAIN,
     INFO_FRAME,
     INFO_LABEL,
     LOG_TEXT,
     TABLE_WIDGET,
+    SECTION_TITLE,
+    SECTION_SUBTITLE,
+    CARD_FRAME,
 )
 from admin.view.tabs.base_tab import BaseTab
 from database.admin_repository import AdminRepository
@@ -48,45 +51,58 @@ class DatabaseTab(BaseTab):
     
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+
+        # Section title
+        title = QLabel("🗄️ Quản lý Database")
+        title.setStyleSheet(SECTION_TITLE)
+        layout.addWidget(title)
+
         # Database info
         info_frame = QFrame()
         info_frame.setStyleSheet(INFO_FRAME)
         info_layout = QVBoxLayout(info_frame)
-        
+
         self.db_info_label = QLabel("Đang tải thông tin database...")
         self.db_info_label.setStyleSheet(INFO_LABEL)
         info_layout.addWidget(self.db_info_label)
         layout.addWidget(info_frame)
-        
+
         # Database operations
         ops_frame = QFrame()
+        ops_frame.setStyleSheet(CARD_FRAME)
         ops_layout = QGridLayout(ops_frame)
-        
+        ops_layout.setSpacing(12)
+
         # Backup button
-        backup_btn = QPushButton("Backup Database")
-        backup_btn.setStyleSheet(BUTTON_GREEN)
+        backup_btn = QPushButton("💾  Backup Database")
+        backup_btn.setStyleSheet(BUTTON_SUCCESS)
+        backup_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         backup_btn.clicked.connect(self.backup_database)
         ops_layout.addWidget(backup_btn, 0, 0)
-        
+
         # Restore button
-        restore_btn = QPushButton("Restore Database")
-        restore_btn.setStyleSheet(BUTTON_ORANGE)
+        restore_btn = QPushButton("📥  Restore Database")
+        restore_btn.setStyleSheet(BUTTON_WARNING)
+        restore_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         restore_btn.clicked.connect(self.restore_database)
         ops_layout.addWidget(restore_btn, 0, 1)
-        
+
         # Clear old data button
-        clear_btn = QPushButton("Xóa dữ liệu cũ")
-        clear_btn.setStyleSheet(BUTTON_RED)
+        clear_btn = QPushButton("🧹  Xóa dữ liệu cũ")
+        clear_btn.setStyleSheet(BUTTON_DANGER)
+        clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         clear_btn.clicked.connect(self.clear_old_data)
         ops_layout.addWidget(clear_btn, 1, 0)
-        
+
         # Export button
-        export_btn = QPushButton("Export Data")
-        export_btn.setStyleSheet(BUTTON_BLUE)
+        export_btn = QPushButton("📤  Export Data")
+        export_btn.setStyleSheet(BUTTON_PRIMARY)
+        export_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         export_btn.clicked.connect(self.export_data)
         ops_layout.addWidget(export_btn, 1, 1)
-        
+
         layout.addWidget(ops_frame)
         
         # Log area

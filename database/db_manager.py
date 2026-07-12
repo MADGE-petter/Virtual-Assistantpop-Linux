@@ -8,6 +8,8 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from utils.paths import get_database_path
+
 
 class DatabaseManager:
     """Centralized database connection manager.
@@ -20,10 +22,7 @@ class DatabaseManager:
     
     def __init__(self, db_path: Optional[str] = None):
         if db_path is None:
-            self.db_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                'conversations.db'
-            )
+            self.db_path = get_database_path()
         else:
             self.db_path = db_path
     

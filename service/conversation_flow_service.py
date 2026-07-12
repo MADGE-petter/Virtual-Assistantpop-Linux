@@ -35,6 +35,7 @@ class ConversationFlowService:
         self._conversation_service = None
         self._memory_service = None
         self._first_greeting_done = False
+        self._pending_habit_app: Optional[str] = None  # App đang chờ user xác nhận mở
 
     def init_intent_service(self):
         if self._conversation_service:
@@ -123,11 +124,82 @@ class ConversationFlowService:
                     greeting = f"Pop đây! Chào {user_name}, bạn cần giúp gì?"
                 else:
                     greeting = f"Chào {user_name}! Rất vui được gặp lại bạn. Bạn cần mình giúp gì?"
+                
+                # Nói greeting TRƯỚC, sau đó mới query habit suggestion (non-blocking)
                 if speak_callback:
                     speak_callback(greeting)
                 else:
                     self.audio.speak(greeting)
+                    self.audio.wait_until_speaking_done()
                 self._first_greeting_done = True
+                
+                # Query habit suggestion sau khi đã nói greeting - không block wake up
+                self._speak_habit_suggestion_if_any(speak_callback)
+    
+    def _get_habit_suggestion(self) -> Optional[str]:
+        """Lấy gợi ý thói quen - có timeout để không block quá lâu."""
+        try:
+            import threading
+            
+            result = [None]  # Dùng list để mutable trong closure
+            
+            def _query():
+                try:
+                    from controller.habit_tracker import get_habit_tracker
+                    
+                    user_id = 1
+                    try:
+                        user_name = self.user.get_display_name()
+                        login_name = self.user.get_login_name() if hasattr(self.user, 'get_login_name') else None
+                        lookup_name = login_name or user_name
+                        if lookup_name and lookup_name not in ("bạn", "guest", None):
+                            uid = self.sql.get_or_create_user(lookup_name)
+                            if uid:
+                                user_id = uid
+                    except Exception:
+                        pass
+                    
+                    tracker = get_habit_tracker()
+                    suggestions = tracker.get_suggestions(user_id)
+                    
+                    if suggestions:
+                        top = suggestions[0]
+                        app_name = top.get('app', '')
+                        confidence = top.get('confidence', 0)
+                        count = top.get('count', 0)
+                        
+                        if confidence >= 0.6 and app_name:
+                            self._pending_habit_app = app_name
+                            result[0] = f"Gợi ý: Bạn thường dùng {app_name} vào giờ này ({count} lần gần đây). Có muốn mở không?"
+                except Exception as e:
+                    print(f"[ConversationFlowService] Error getting habit suggestion: {e}")
+            
+            thread = threading.Thread(target=_query, daemon=True)
+            thread.start()
+            thread.join(timeout=1.5)  # Timeout 1.5s - không block quá lâu
+            
+            return result[0]
+        except Exception as e:
+            print(f"[ConversationFlowService] Error in _get_habit_suggestion: {e}")
+            return None
+    
+    def _speak_habit_suggestion_if_any(self, speak_callback):
+        """Nói habit suggestion nếu có, chạy trên thread riêng để không block."""
+        try:
+            import threading
+            
+            def _query_and_speak():
+                suggestion = self._get_habit_suggestion()
+                if suggestion:
+                    if speak_callback:
+                        speak_callback(suggestion)
+                    else:
+                        self.audio.speak(suggestion)
+            
+            thread = threading.Thread(target=_query_and_speak, daemon=True)
+            thread.start()
+        except Exception as e:
+            print(f"[ConversationFlowService] Error in _speak_habit_suggestion: {e}")
 
     def stop(self) -> None:
         self._assistant_active = False
@@ -154,6 +226,27 @@ class ConversationFlowService:
     ) -> str:
         if self._is_interactive_response(user_input):
             return ""
+
+        # Kiểm tra nếu có pending habit suggestion và user đồng ý mở
+        if self._pending_habit_app:
+            user_lower = user_input.lower().strip()
+            agree_keywords = ["mở cho tôi", "mở đi", "có", "ok", "oke", "okay", 
+                            "ừ", "ừm", "uh", "đồng ý", "mở", "yes", "yeah", "yep"]
+            if any(kw in user_lower for kw in agree_keywords):
+                app_to_open = self._pending_habit_app
+                self._pending_habit_app = None  # Clear pending
+                
+                # Mở app qua action handler
+                from service.conversation_service import ActionResult
+                result = self.actions.handle("open_app", app_to_open, 
+                                            self.user.get_display_name() or "guest", None)
+                response = result.text if isinstance(result, ActionResult) else str(result)
+                
+                if speak_callback:
+                    speak_callback(response)
+                else:
+                    self.audio.speak(response)
+                return response
 
         service = self._get_conversation_service()
         user_name = self.user.get_display_name() or "guest"

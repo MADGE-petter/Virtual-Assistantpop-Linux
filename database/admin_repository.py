@@ -4,6 +4,7 @@ import sqlite3
 from typing import Dict, List, Optional
 
 from utils.logger import get_logger
+from utils.paths import get_database_path
 
 from .base_repository import BaseRepository
 
@@ -15,9 +16,7 @@ class AdminRepository(BaseRepository):
 
     def __init__(self, db_path: str = None):
         if db_path is None:
-            db_path = os.path.join(
-                os.path.dirname(__file__), 'conversations.db'
-            )
+            db_path = get_database_path()
         super().__init__(db_path)
         self._init_admin_tables()
 

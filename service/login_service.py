@@ -5,20 +5,18 @@ import json
 import os
 
 from database.db_manager import get_db_manager
+from utils.paths import get_database_path, get_writeable_path
 
 
 class LoginService:
-    def __init__(self, db_path=None, users_file="users.json", settings_file="user_settings.json"):
+    def __init__(self, db_path=None, users_file=None, settings_file=None):
         if db_path is None:
-            self.db_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), 
-                'database', 'conversations.db'
-            )
+            self.db_path = get_database_path()
         else:
             self.db_path = db_path
             
-        self.users_file = users_file
-        self.settings_file = settings_file
+        self.users_file = users_file if users_file is not None else get_writeable_path("users.json")
+        self.settings_file = settings_file if settings_file is not None else get_writeable_path("user_settings.json")
         self.db_manager = get_db_manager(self.db_path)
         self._ensure_users_table()
         self._ensure_sessions_table()

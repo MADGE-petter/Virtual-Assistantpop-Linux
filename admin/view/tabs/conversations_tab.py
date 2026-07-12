@@ -33,12 +33,14 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 from admin.view.styles import (
-    BUTTON_BLUE,
-    BUTTON_PURPLE,
-    BUTTON_RED,
+    BUTTON_PRIMARY,
+    BUTTON_DANGER,
+    BUTTON_ACCENT,
     CONVERSATION_HEADER,
     DIALOG_CONVERSATION,
     TABLE_WIDGET,
+    SECTION_TITLE,
+    SECTION_SUBTITLE,
 )
 
 
@@ -51,42 +53,32 @@ class ConversationsTab(BaseTab):
     
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+
+        # Section title
+        title = QLabel("Lịch sử trò chuyện")
+        title.setStyleSheet(SECTION_TITLE)
+        layout.addWidget(title)
+
         # Conversations table
         self.conversations_table = QTableWidget()
         self.conversations_table.setColumnCount(4)
-        self.conversations_table.setHorizontalHeaderLabels(["User", "Số lượng trò chuyện", "Lần cuối", "Hành động"])
+        self.conversations_table.setHorizontalHeaderLabels(["Người dùng", "Số trò chuyện", "Lần cuối", "Hành động"])
         self.conversations_table.setStyleSheet(TABLE_WIDGET)
         self.conversations_table.horizontalHeader().setStretchLastSection(True)
         self.conversations_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.conversations_table.verticalHeader().setDefaultSectionSize(50)
         self.conversations_table.verticalHeader().setMinimumSectionSize(40)
         layout.addWidget(self.conversations_table)
-        
+
         # Control buttons
-        button_frame = QFrame()
-        button_layout = QHBoxLayout(button_frame)
-        
-        # Delete conversation button
-        delete_conv_btn = QPushButton("Xóa Trò Chuyện")
-        delete_conv_btn.setStyleSheet(BUTTON_RED)
-        delete_conv_btn.clicked.connect(self.delete_conversation)
-        button_layout.addWidget(delete_conv_btn)
-        
-        # Export button
-        export_btn = QPushButton("Export CSV")
-        export_btn.setStyleSheet(BUTTON_BLUE)
-        export_btn.clicked.connect(self.export_conversations)
-        button_layout.addWidget(export_btn)
-        
-        # Refresh button
-        refresh_btn = QPushButton("Làm Mới")
-        refresh_btn.setStyleSheet(BUTTON_PURPLE)
-        refresh_btn.clicked.connect(self.load_data)
-        button_layout.addWidget(refresh_btn)
-        
-        button_layout.addStretch()
-        layout.addWidget(button_frame)
+        buttons = [
+            ("🗑️  Xóa trò chuyện", BUTTON_DANGER, self.delete_conversation),
+            ("📤  Export CSV", BUTTON_ACCENT, self.export_conversations),
+            ("  Làm mới", BUTTON_PRIMARY, self.load_data),
+        ]
+        layout.addWidget(self.create_button_frame(buttons))
         
         # Enable double-click for detail view
         self.conversations_table.doubleClicked.connect(self.view_user_conversations)
