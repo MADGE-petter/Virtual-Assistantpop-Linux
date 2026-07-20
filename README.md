@@ -10,7 +10,7 @@ Pop Assistant là một trợ lý ảo dành cho Windows được phát triển 
 
 ### Video
 
-<video controls src="1783873363106_66381167024278951_516732694922087015.mp4" title="Title"></video>
+https://github.com/user-attachments/assets/066507a0-43c8-4d33-a29b-04d75c4f7c4e
 
 ### Ảnh giao diện
 
