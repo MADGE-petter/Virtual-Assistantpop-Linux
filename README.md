@@ -12,6 +12,8 @@
   Điều khiển bằng giọng nói · Multi-Agent · Mã nguồn mở · Không cần internet
 </p>
 
+<p align="center"> 🌐 <a href="https://MADGE-petter.github.io/Virtual-Assistantpop-Linux/" target="_blank" rel="noopener"><b>Xem trang giới thiệu</b></a> </p>
+
 ---
 
 ## Tổng quan
@@ -131,18 +133,18 @@ Dự án được xây dựng theo mô hình **MVC (Model–View–Controller)**
 ┌──────────────────────────────────────────────┐
 │ Người dùng                                   │
 │                                              │
-│  ┌──────────┐    ┌──────────┐                │
-│  │ Giao diện │    │ Controller│              |
-│  │  PyQt6   │◄───│  Layer   │                │
-│  └────┬─────┘    └────┬─────┘                │
+│  ┌──────────┐    ┌────────── ┐               │
+│  │ Giao diện│    │ Controller│               |
+│  │  PyQt6   │◄───│  Layer    │               │
+│  └────┬─────┘    └────┬───── ┘               │
 │       │               │                      │
 │       ▼               ▼                      │
 │  ┌─────────────────────────────────────┐     │
-│  │         Multi-Agent System           │    │
+│  │         Multi-Agent System          │     │
 │  │  ┌─────────┐ ┌─────────┐ ┌────────┐ │     │
 │  │  │ Planner │ │ Memory  │ │Workflow│ │     │
-│  │  └────┬────┘ └─────────┘ │Engine │ │      │
-│  │       └────────┬─────────┴───┬────┘       │
+│  │  └────┬────┘ └─────────┘ │Engine  │ │     │
+│  │       └────────┬─────────┴───┬────  ┘     │
 │  │                ▼             │            │
 │  │  ┌─────────────────────────┐ │            │
 │  │  │   Agent Orchestrator    │ │            │
