@@ -28,19 +28,6 @@ Dự án tích hợp:
 
 ---
 
-## Demo
-
-### Video
-https://github.com/user-attachments/assets/066507a0-43c8-4d33-a29b-04d75c4f7c4e
-
-### Ảnh giao diện
-
-| Màn hình chính | Giám sát hệ thống | Gợi ý ứng dụng |
-|---|---|---|
-| ![Main](<Ảnh chụp màn hình 2026-07-12 224918.png>) | ![System](<Ảnh chụp màn hình 2026-07-12 224924-1.png>) | ![Suggest](<Ảnh chụp màn hình 2026-07-12 224936.png>) |
-
----
-
 ## Tính năng
 
 ### Trợ lý giọng nói
