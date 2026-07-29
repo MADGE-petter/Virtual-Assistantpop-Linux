@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSmoothScroll();
   initElectricEffects();
   initLogoAnimation();
+  initHaloLogoAnimation();
 });
 
 // ---------- Stars ----------
@@ -162,7 +163,51 @@ function initLogoAnimation() {
   }
 
   const logoDot = logoContainer.querySelector('.logo-dot');
-  if (logoDot) {
-    logoDot.style.animation = 'dotPulse 2s ease-in-out infinite';
-  }
+  if (logoDot) { logoDot.style.animation = 'dotPulse 2s ease-in-out infinite'; }
+}
+
+// ---------- Halo Logo Animation ----------
+function initHaloLogoAnimation() {
+    const lightningContainer = document.getElementById('lightningContainer');
+    if (!lightningContainer) return;
+
+    function createLightning() {
+        const lightning = document.createElement('div');
+        lightning.className = 'lightning';
+
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 80 + Math.random() * 70;
+        const x = Math.cos(angle) * distance + 125;
+        const y = Math.sin(angle) * distance + 125;
+
+        const size = 10 + Math.random() * 40;
+        const rotation = angle * 180 / Math.PI + (Math.random() * 20 - 10);
+
+        lightning.style.left = x + 'px';
+        lightning.style.top = y + 'px';
+        lightning.style.width = size + 'px';
+        lightning.style.height = '2px';
+        lightning.style.transform = `rotate(${rotation}deg)`;
+
+        lightningContainer.appendChild(lightning);
+
+        setTimeout(() => {
+            lightning.remove();
+        }, 300);
+    }
+
+    function lightningLoop() {
+        createLightning();
+        const delay = 50 + Math.random() * 150;
+        setTimeout(lightningLoop, delay);
+
+        if (Math.random() > 0.7) {
+            setTimeout(createLightning, 10);
+            if (Math.random() > 0.5) {
+                setTimeout(createLightning, 20);
+            }
+        }
+    }
+
+    lightningLoop();
 }

@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobileMenu();
   initRevealAnimations();
   initSmoothScroll();
+  initElectricEffects();
+  initLogoAnimation();
 });
 
 // ---------- Stars ----------
@@ -133,17 +135,34 @@ function initElectricEffects() {
   loop();
 }
 
-// Update DOMContentLoaded to include new effect
-const originalDOMContentLoaded = document.addEventListener('DOMContentLoaded', () => {
-  createStars();
-  initMouseLight();
-  initNavbar();
-  initMobileMenu();
-  initRevealAnimations();
-  initSmoothScroll();
-});
+// ---------- Logo Animation ----------
+function initLogoAnimation() {
+  const logoContainer = document.querySelector('.hero-core .logo-container');
+  if (!logoContainer) return;
 
-// Since we can't easily wrap the existing listener in this tool, 
-// I will add a separate call or the user can just add it to the main list.
-// Actually, I'll just add the function and a call to it.
-document.addEventListener('DOMContentLoaded', initElectricEffects);
+  const logoSvg = logoContainer.querySelector('.logo-svg');
+  const logoHalo = logoContainer.querySelector('.logo-halo');
+
+  if (logoSvg) {
+    logoSvg.style.animation = 'corePulse 3s ease-in-out infinite';
+  }
+
+  if (logoHalo) {
+    logoHalo.style.animation = 'haloRotate 20s linear infinite';
+  }
+
+  const logoRing = logoContainer.querySelector('.logo-ring');
+  if (logoRing) {
+    logoRing.style.animation = 'ringDraw 4s ease-in-out infinite';
+  }
+
+  const logoIcon = logoContainer.querySelector('.logo-icon');
+  if (logoIcon) {
+    logoIcon.style.animation = 'iconGlow 2.5s ease-in-out infinite';
+  }
+
+  const logoDot = logoContainer.querySelector('.logo-dot');
+  if (logoDot) {
+    logoDot.style.animation = 'dotPulse 2s ease-in-out infinite';
+  }
+}

@@ -1,0 +1,15 @@
+<svg width="1024" height="256" viewBox="0 0 1024 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="popGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FFAA" />
+      <stop offset="100%" stop-color="#00CCFF" />
+    </linearGradient>
+  </defs>
+  <!-- Icon -->
+  <g transform="translate(0, 0)">
+    <path d="M128 80C61.1 80 0 161.1 0 256C0 350.9 61.1 432 128 432C204.9 432 256 350.9 256 256C256 161.1 204.9 80 128 80ZM128 360C60 360 12 312 12 256C12 199.9 60 152 128 152C184 152 240 199.9 240 256C240 312 184 360 128 360Z" fill="url(#popGradient)" transform="translate(0, -128) scale(0.5)"/>
+    <circle cx="128" cy="128" r="20" fill="url(#popGradient)" transform="translate(0, -128) scale(0.5)"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="280" y="180" font-family="Arial, sans-serif" font-weight="bold" font-size="140" fill="currentColor" style="letter-spacing: 10px;">POP</text>
+</svg>

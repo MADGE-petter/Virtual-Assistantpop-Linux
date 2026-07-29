@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="popGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FFAA" />
+      <stop offset="100%" stop-color="#00CCFF" />
+    </linearGradient>
+  </defs>
+  <path d="M16 6C10.2 6 4.5 11.7 4.5 17.5C4.5 23.3 10.2 29 16 29C21.8 29 27.5 23.3 27.5 17.5C27.5 11.7 21.8 6 16 6ZM16 23C12.5 23 9.5 20 9.5 16C9.5 12 12.5 9 16 9C19.5 9 22.5 12 22.5 16C22.5 20 19.5 23 16 23Z" fill="url(#popGradient)"/>
+  <circle cx="16" cy="16" r="2.5" fill="url(#popGradient)"/>
+</svg>
