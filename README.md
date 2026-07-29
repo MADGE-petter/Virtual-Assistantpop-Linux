@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <b>AI Desktop Companion</b> — Trợ lý AI chạy hoàn toàn nội bộ, bảo mật tuyệt đối.<br>
+  <b>AI Desktop Companion</b> — Trợ lý AI chạy hoàn toàn nội bộ.<br>
   Điều khiển bằng giọng nói · Multi-Agent · Mã nguồn mở · Không cần internet
 </p>
 
@@ -121,30 +121,6 @@ pip install nemo_toolkit[all]
 python login.py
 ```
 
-### Windows
-
-```bash
-# Clone dự án
-git clone https://github.com/MADGE-petter/Virtual-Assistantpop.git
-cd Virtual-Assistantpop
-
-# Tạo virtual environment
-python -m venv .venv
-.venv\Scripts\activate
-
-# Cài đặt PyTorch (Yêu cầu cho Parakeet-CTC)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Cài đặt dependencies chính
-pip install -r requirements.txt
-
-# Cài đặt NVIDIA NeMo cho STT
-pip install nemo_toolkit[all]
-
-# Chạy ứng dụng
-python login.py
-```
-
 ---
 
 ## Kiến trúc hệ thống
@@ -196,13 +172,13 @@ Microphone → Parakeet-CTC (STT) → Intent Parser → Agent → Magpie-TTS →
 ## Công nghệ sử dụng
 
 | Thành phần | Công nghệ |
-| Gemma 4 e4B QAT 7B   |
+|---|---|
 | Ngôn ngữ | Python 3.10+ |
 | Giao diện | PyQt6 |
 | Cơ sở dữ liệu | SQLite |
 | STT | Parakeet-CTC-0.6B-VI (NVIDIA NeMo) |
 | TTS | Magpie-TTS (giọng Sophia) |
-| LLM | Gemma 4B (llama.cpp) |
+| LLM | Gemma 4 e4B QAT 7B (llama.cpp) |
 | Web Server | FastAPI + Uvicorn |
 | Giám sát hệ thống | psutil, pynvml |
 | Đọc nhiệt độ | LibreHardwareMonitor |
