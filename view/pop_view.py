@@ -45,6 +45,7 @@ from view.widgets import (
     PersonalInfoDialog,
     SettingsDialog,
 )
+from view.widgets.modern_widgets import AIOrbWidget, ChatBubble
 
 
 class SoundWaveWidget(QWidget):
@@ -291,16 +292,95 @@ class PopView(QMainWindow):
     def setup_ui(self):
         """Create all UI elements"""
         # Central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
         
-        # Set elegant dark background with subtle gradient
+        # Main Layout
+        self.main_layout = QVBoxLayout(self.central_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
+        
+        # 1. AI Orb Area (Center)
+        self.orb_container = QWidget()
+        self.orb_layout = QVBoxLayout(self.orb_container)
+        self.orb_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.ai_orb = AIOrbWidget()
+        self.orb_layout.addWidget(self.ai_orb)
+        
+        self.main_layout.addWidget(self.orb_container, 1)
+        
+        # 2. Chat Panel (Bottom - Collapsible)
+        self.chat_panel = QFrame()
+        self.chat_panel.setObjectName("ChatPanel")
+        self.chat_layout = QVBoxLayout(self.chat_panel)
+        
+        # Chat History Area
+        self.chat_scroll = QScrollArea()
+        self.chat_scroll.setWidgetResizable(True)
+        self.chat_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        self.chat_content = QWidget()
+        self.chat_content_layout = QVBoxLayout(self.chat_content)
+        self.chat_content_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        self.chat_scroll.setWidget(self.chat_content)
+        
+        self.chat_layout.addWidget(self.chat_scroll)
+        
+        # Input Area
+        self.input_container = QFrame()
+        self.input_layout = QHBoxLayout(self.input_container)
+        
+        self.chat_input = QTextEdit()
+        self.chat_input.setPlaceholderText("Nhập lệnh dài tại đây...")
+        self.chat_input.setMaximumHeight(60)
+        
+        self.send_btn = QPushButton("Gửi")
+        self.send_btn.clicked.connect(self._on_send_chat)
+        
+        self.input_layout.addWidget(self.chat_input)
+        self.input_layout.addWidget(self.send_btn)
+        
+        self.chat_layout.addWidget(self.input_container)
+        
+        # Add chat panel to main layout
+        self.main_layout.addWidget(self.chat_panel, 0, Qt.AlignmentFlag.AlignBottom)
+        
+        # Set elegant dark background
         self.setStyleSheet("""
             QMainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #0f0f1a, stop:1 #1a1a2a);
+                background-color: #121212;
+            }
+            #ChatPanel {
+                background-color: rgba(30, 30, 30, 200);
+                border-top: 1px solid #333;
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
+                max-height: 300px;
+            }
+            QTextEdit {
+                background-color: #252525;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 10px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #0078D7;
+                color: white;
+                border-radius: 10px;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #005A9E;
+                               
             }
         """)
+
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
         
         # Main layout
         main_layout = QVBoxLayout(central_widget)
@@ -445,12 +525,31 @@ class PopView(QMainWindow):
             self.updateBotTextSignal.emit(text)
 
     def _on_update_user_text(self, text):
-        if hasattr(self, 'user_text_label'):
-            self.user_text_label.setText(text)
+        """Add user message to chat bubble"""
+        bubble = ChatBubble(text, is_user=True)
+        self.chat_content_layout.addWidget(bubble)
+        self._scroll_to_bottom()
 
     def _on_update_bot_text(self, text):
-        if hasattr(self, 'bot_text_label'):
-            self.bot_text_label.setText(text)
+        """Add bot message to chat bubble"""
+        bubble = ChatBubble(text, is_user=False)
+        self.chat_content_layout.addWidget(bubble)
+        self._scroll_to_bottom()
+
+    def _scroll_to_bottom(self):
+        """Scroll chat to the latest message"""
+        self.chat_scroll.verticalScrollBar().setValue(
+            self.chat_scroll.verticalScrollBar().maximum()
+        )
+
+    def _on_send_chat(self):
+        """Handle manual chat input"""
+        text = self.chat_input.toPlainText().strip()
+        if text and self.controller:
+            self._on_update_user_text(text)
+            self.chat_input.clear()
+            # Send to controller for processing
+            self.controller.process_chat_input(text)
     
     def create_menu(self):
         """Tạo menu với 3 lựa chọn"""

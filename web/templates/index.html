@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PopAssistant Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header h1 { color: #00d9ff; font-size: 1.8em; }
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-dot {
+            width: 12px; height: 12px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Main Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .label { color: #888; font-size: 0.9em; margin-bottom: 10px; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; color: #00d9ff; }
+        .stat-card .sub { color: #666; font-size: 0.8em; margin-top: 5px; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 12px 25px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.1); }
+        .tab.active {
+            background: #00d9ff;
+            color: #1a1a2e;
+            border-color: #00d9ff;
+        }
+        
+        /* Content Sections */
+        .section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            color: #00d9ff;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        /* Conversation List */
+        .conversation-list { max-height: 500px; overflow-y: auto; }
+        .conversation-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 3px solid #00d9ff;
+        }
+        .conversation-item.user { border-left-color: #ff6b6b; }
+        .conversation-item .time {
+            color: #666;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+        .conversation-item .message {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+        .conversation-item .user-msg { color: #ff6b6b; }
+        .conversation-item .bot-msg { color: #00d9ff; }
+        .conversation-item .intent {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 8px;
+        }
+        
+        /* Activity Chart Placeholder */
+        .activity-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            height: 150px;
+            padding: 10px 0;
+        }
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #00d9ff, #00ff88);
+            border-radius: 5px 5px 0 0;
+            min-width: 20px;
+            transition: height 0.5s;
+        }
+        
+        /* App Usage List */
+        .app-list { display: flex; flex-direction: column; gap: 10px; }
+        .app-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        .app-item .name { flex: 1; }
+        .app-item .count {
+            background: #00d9ff;
+            color: #1a1a2e;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        /* Search */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1em;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        .search-box button {
+            padding: 12px 25px;
+            background: #00d9ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .header { padding: 15px 20px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 PopAssistant Dashboard</h1>
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>Online</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Tổng cuộc trò chuyện</div>
+                <div class="value" id="stat-total">-</div>
+                <div class="sub">Tất cả thời gian</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Hôm nay</div>
+                <div class="value" id="stat-today">-</div>
+                <div class="sub" id="stat-week">Tuần này: -</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Phiên hoạt động</div>
+                <div class="value" id="stat-sessions">-</div>
+                <div class="sub">Gần đây</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Ứng dụng phổ biến</div>
+                <div class="value" id="stat-top-app">-</div>
+                <div class="sub">Hôm nay</div>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="conversations">💬 Cuộc trò chuyện</div>
+            <div class="tab" data-tab="activity">📊 Hoạt động</div>
+            <div class="tab" data-tab="search">🔍 Tìm kiếm</div>
+        </div>
+        
+        <!-- Conversations Tab -->
+        <div id="tab-conversations" class="tab-content">
+            <div class="section">
+                <h2>Lịch sử cuộc trò chuyện</h2>
+                <div id="conversations-list" class="conversation-list">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Tab -->
+        <div id="tab-activity" class="tab-content" style="display:none;">
+            <div class="section">
+                <h2>📈 Hoạt động theo giờ (Hôm nay)</h2>
+                <div id="activity-chart" class="activity-chart"></div>
+            </div>
+            <div class="section">
+                <h2>📱 Ứng dụng sử dụng nhiều nhất</h2>
+                <div id="app-list" class="app-list">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Tab -->
+        <div id="tab-search" class="tab-content" style="display:none;">
+            <div class="section">
+                <h2>Tìm kiếm cuộc trò chuyện</h2>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Nhập từ khóa...">
+                    <button onclick="searchConversations()">Tìm kiếm</button>
+                </div>
+                <div id="search-results" class="conversation-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api';
+        
+        // Load stats on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadConversations();
+            initTabs();
+        });
+        
+        // Tab switching
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+                    
+                    if (tab.dataset.tab === 'activity') loadActivity();
+                });
+            });
+        }
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const [stats, summary] = await Promise.all([
+                    fetch(`${API_BASE}/conversations/stats`).then(r => r.json()),
+                    fetch(`${API_BASE}/activity/summary`).then(r => r.json())
+                ]);
+                
+                document.getElementById('stat-total').textContent = stats.total || 0;
+                document.getElementById('stat-today').textContent = stats.today || 0;
+                document.getElementById('stat-week').textContent = 'Tuần này: ' + (stats.this_week || 0);
+                document.getElementById('stat-sessions').textContent = '-';
+                
+                if (summary.top_apps && summary.top_apps.length > 0) {
+                    document.getElementById('stat-top-app').textContent = summary.top_apps[0].app;
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+        
+        // Load conversations
+        async function loadConversations() {
+            const container = document.getElementById('conversations-list');
+            try {
+                const data = await fetch(`${API_BASE}/conversations?limit=50`).then(r => r.json());
+                
+                if (!data.conversations || data.conversations.length === 0) {
+                    container.innerHTML = '<div class="loading">Chưa có cuộc trò chuyện nào</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.conversations.map(conv => `
+                    <div class="conversation-item">
+                        <div class="time">${formatTime(conv.timestamp)}</div>
+                        <div class="message user-msg">👤 ${escapeHtml(conv.user_message)}</div>
+                        <div class="message bot-msg">🤖 ${escapeHtml(conv.bot_message)}</div>
+                        ${conv.intent ? `<span class="intent">${conv.intent}</span>` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="loading">Lỗi khi tải dữ liệu</div>';
+            }
+        }
+        
+        // Load activity data
+        async function loadActivity() {
+            try {
+                const summary = await fetch(`${API_BASE}/activity/summary`).then(r => r.json());
+                
+                // Activity chart
+                const chartContainer = document.getElementById('activity-chart');
+                const hours = Array.from({length: 24}, (_, i) => i);
+                const hourCounts = {};
+                (summary.active_hours || []).forEach(h => hourCounts[parseInt(h.hour)] = h.count);
+                
+                const maxCount = Math.max(...Object.values(hourCounts), 1);
+                
+                chartContainer.innerHTML = hours.map(hour => {
+                    const count = hourCounts[hour] || 0;
+                    const height = (count / maxCount * 100) || 5;
+                    return `<div class="bar" style="height:${height}%" title="${hour}:00 - ${count} lần"></div>`;
+                }).join('');
+                
+                // App list
+                const appContainer = document.getElementById('app-list');
+                if (!summary.top_apps || summary.top_apps.length === 0) {
+                    appContainer.innerHTML = '<div class="loading">Chưa có dữ liệu</div>';
+                    return;
+                }
+                
+                appContainer.innerHTML = summary.top_apps.map(app => `
+                    <div class="app-item">
+                        <span class="name">${escapeHtml(app.app)}</span>
+                        <span class="count">${app.count}</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load activity:', e);
+            }
+        }
+        
+        // Search conversations
+        async function searchConversations() {
+            const query = document.getElementById('search-input').value.trim();
+            const container = document.getElementById('search-results');
+            
+            if (!query) return;
+            
+            container.innerHTML = '<div class="loading">Đang tìm kiếm...</div>';
+            
+            try {
+                const data = await fetch(`${API_BASE}/conversations/search?q=${encodeURIComponent(query)}`).then(r => r.json());
+                
+                if (!data.conversations || data.conversations.length === 0) {
+                    container.innerHTML = '<div class="loading">Không tìm thấy kết quả</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.conversations.map(conv => `
+                    <div class="conversation-item">
+                        <div class="time">${formatTime(conv.timestamp)}</div>
+                        <div class="message user-msg">👤 ${escapeHtml(conv.user_message)}</div>
+                        <div class="message bot-msg">🤖 ${escapeHtml(conv.bot_message)}</div>
+                        ${conv.intent ? `<span class="intent">${conv.intent}</span>` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="loading">Lỗi khi tìm kiếm</div>';
+            }
+        }
+        
+        // Enter key for search
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchConversations();
+            });
+        });
+        
+        // Utilities
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            return d.toLocaleString('vi-VN');
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

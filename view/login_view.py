@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMenu,
     QMenuBar,
     QMessageBox,
@@ -29,7 +28,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
+from view.widgets.custom_line_edit import CustomLineEdit
 from view.ui_helpers import create_ui_footer, position_ui_footer
 
 
@@ -64,7 +63,7 @@ class LoginView(QDialog):
                 padding: 12px;
                 color: rgba(255, 255, 255, 240);
                 font-size: 15px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
             }
@@ -80,7 +79,7 @@ class LoginView(QDialog):
                 color: rgba(0, 255, 136, 240);
                 font-size: 15px;
                 font-weight: 600;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
             }
@@ -96,7 +95,7 @@ class LoginView(QDialog):
             QLabel {
                 color: rgba(255, 255, 255, 220);
                 font-size: 15px;
-                font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 padding: 5px;
             }
         """)
@@ -124,13 +123,13 @@ class LoginView(QDialog):
         layout.addWidget(title)
         
         # Username
-        self.login_username = QLineEdit()
+        self.login_username = CustomLineEdit()
         self.login_username.setPlaceholderText("Tên đăng nhập")
         layout.addWidget(self.login_username)
         
         # Password
-        self.login_password = QLineEdit()
-        self.login_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.login_password = CustomLineEdit()
+        self.login_password.setEchoMode(CustomLineEdit.EchoMode.Password)
         self.login_password.setPlaceholderText("Mật khẩu")
         layout.addWidget(self.login_password)
         

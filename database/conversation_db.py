@@ -53,16 +53,6 @@ class ConversationDB(BaseRepository):
         """)
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS admin_users (
-                maAdmin INTEGER PRIMARY KEY AUTOINCREMENT,
-                tenAdmin TEXT NOT NULL UNIQUE,
-                matKhauMaHoa TEXT NOT NULL,
-                thoiGianTao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                thoiGianCapNhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 maPhien TEXT PRIMARY KEY,
                 maNguoiDung INTEGER,
@@ -155,10 +145,10 @@ class ConversationDB(BaseRepository):
         """)
 
         cursor.execute("""
-            CREATE TRIGGER IF NOT EXISTS update_admin_users_timestamp 
-            AFTER UPDATE ON admin_users
+            CREATE TRIGGER IF NOT EXISTS update_sessions_timestamp 
+            AFTER UPDATE ON sessions
             BEGIN
-                UPDATE admin_users SET thoiGianCapNhat = CURRENT_TIMESTAMP WHERE maAdmin = NEW.maAdmin;
+                UPDATE sessions SET thoiGianKetThuc = CURRENT_TIMESTAMP WHERE maPhien = NEW.maPhien;
             END
         """)
     

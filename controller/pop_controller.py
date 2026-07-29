@@ -1,4 +1,4 @@
-"""PopController - Facade điều phối chính."""
+"""PopController - Facade điều phối chính với AI Agent."""
 import os
 import sys
 import threading
@@ -18,6 +18,10 @@ from service.interactive_alert_service import InteractiveAlertService
 from service.user_service import UserService
 from service.wake_word import WakeWordDetector
 
+# === AI AGENT IMPORTS ===
+from service.agent.agent_loop import AgentLoop
+from service.agent.gemma_llm_service import get_gemma_service
+
 
 class PopController(QObject):
     """Facade controller - chỉ điều phối, không xử lý logic chi tiết."""
@@ -36,9 +40,23 @@ class PopController(QObject):
         self._active = False
         
         # === KHỞI TẠO SERVICES ===
-        self.audio = AudioService(view)
+        self.audio = AudioService(view, auto_learn=True, use_word_tts=True)
         self.sql = SqlService()
         self.actions = ActionHandler(self.audio, view)
+        
+        # === KHỞI TẠO GEMMA LLM SERVICE ===
+        self._llm_service = None
+        self._init_llm_service()
+        
+        # === AI AGENT SYSTEM ===
+        # Agent Loop thay thế ConversationFlowService cũ
+        self.agent_loop = AgentLoop(
+            audio_service=self.audio,
+            sql_service=self.sql,
+            app_scanner=None,  # Sẽ set sau
+            llm_service=self._llm_service  # Gemma LLM Service
+        )
+        self._use_agent_mode = True  # Toggle giữa agent mode và legacy mode
         
         # User service
         self._user_svc = UserService(self.sql)
@@ -73,8 +91,41 @@ class PopController(QObject):
                 self.actions.app_handler.set_login_name(login_username)
             except Exception:
                 pass
+        
+        # Set app scanner cho Agent Loop
+        try:
+            from service.app_scanner import AppScanner
+            self.agent_loop.set_app_scanner(AppScanner())
+        except Exception:
+            pass
+    
+    def _init_llm_service(self):
+        """Khởi tạo Gemma 4 E4B LLM Service"""
+        try:
+            print("[PopController] Initializing Gemma 4 E4B LLM Service...")
+            self._llm_service = get_gemma_service()
+            print("[PopController] Gemma LLM Service loaded successfully!")
+        except Exception as e:
+            print(f"[PopController] Warning: Failed to load Gemma LLM: {e}")
+            print("[PopController] Falling back to rule-based planning")
+            self._llm_service = None
+    
+    def is_llm_available(self) -> bool:
+        """Kiểm tra LLM có sẵn sàng không"""
+        return self._llm_service is not None and self._llm_service.is_loaded()
+    
+    def reload_llm(self):
+        """Reload LLM Service"""
+        try:
+            from service.agent.gemma_llm_service import reset_gemma_service
+            reset_gemma_service()
+            self._init_llm_service()
+            if self._llm_service:
+                self.agent_loop.set_llm(self._llm_service)
+        except Exception as e:
+            print(f"[PopController] Failed to reload LLM: {e}")
 
-        # === KHỞI TẠO SUB-CONTROLLERS ===
+        # === KHỞI TẠO SUB-CONTROLLERS (LEGACY) ===
         self.wake_detector = WakeWordDetector(self.audio, view)
         self.voice = VoiceController(self.audio)
         self.voice.init_wake_detector(self.wake_detector)
@@ -284,23 +335,55 @@ class PopController(QObject):
         threading.Thread(target=self._run_conversation, args=(from_wake_up,), daemon=True).start()
     
     def _run_conversation(self, from_wake_up: bool = False):
-        """Conversation main loop."""
+        """Conversation main loop - hỗ trợ cả Agent mode và Legacy mode."""
         try:
-            self.conversation.start_session()
-            self.conversation.run_first_interaction(
-                get_input_callback=self.voice.get_voice_input,
-                speak_callback=self.audio.speak,
-                from_wake_up=from_wake_up
-            )
-            self.conversation.run_main_loop(
-                get_input_callback=self.voice.get_voice_input,
-                on_idle_callback=lambda: self.sleep(manual=False),
-                idle_timeout=45
-            )
+            if self._use_agent_mode:
+                self._run_agent_conversation(from_wake_up)
+            else:
+                self._run_legacy_conversation(from_wake_up)
         except Exception as e:
             print(f"[PopController] Conversation error: {e}")
             import traceback
             traceback.print_exc()
+    
+    def _run_agent_conversation(self, from_wake_up: bool = False):
+        """Agent mode conversation loop."""
+        user_name = self.user.get_display_name() or ""
+        self.agent_loop.start_session(user_name)
+        
+        # Vòng lặp chính
+        while self._active:
+            try:
+                # Listen
+                user_text = self.voice.get_voice_input()
+                if not user_text or user_text == "...":
+                    continue
+                
+                # Process qua Agent pipeline
+                response = self.agent_loop.process_request(user_text)
+                
+                # Nếu response rỗng (tool đã speak trực tiếp), không speak lại
+                if response:
+                    self.audio.speak(response)
+                    
+            except Exception as e:
+                print(f"[AgentLoop] Error: {e}")
+                import traceback
+                traceback.print_exc()
+    
+    def _run_legacy_conversation(self, from_wake_up: bool = False):
+        """Legacy conversation loop (giữ nguyên)."""
+        self.conversation.start_session()
+        self.conversation.run_first_interaction(
+            get_input_callback=self.voice.get_voice_input,
+            speak_callback=self.audio.speak,
+            from_wake_up=from_wake_up
+        )
+        self.conversation.run_main_loop(
+            get_input_callback=self.voice.get_voice_input,
+            on_idle_callback=lambda: self.sleep(manual=False),
+            idle_timeout=45
+        )
     
     # ============================================================
     # LEGACY COMPATIBILITY
@@ -322,3 +405,33 @@ class PopController(QObject):
         """Legacy."""
         from service.intern import IntentClassifier
         return IntentClassifier.classify(text)
+    
+    # ============================================================
+    # AI AGENT API
+    # ============================================================
+    
+    def enable_agent_mode(self, enabled: bool = True):
+        """Bật/tắt Agent mode."""
+        self._use_agent_mode = enabled
+    
+    def set_llm_service(self, llm_service):
+        """Gắn LLM service vào Agent Loop."""
+        self.agent_loop.set_llm(llm_service)
+        print("[PopController] LLM service integrated")
+    
+    def get_agent_loop(self) -> AgentLoop:
+        """Lấy Agent Loop để debug/kiểm tra."""
+        return self.agent_loop
+    
+    def get_agent_registry(self):
+        """Lấy Agent Registry."""
+        return self.agent_loop.registry
+    
+    def list_agents(self) -> list:
+        """Liệt kê tất cả agents."""
+        return self.agent_loop.registry.list_agents()
+    
+    def list_tools(self) -> list:
+        """Liệt kê tất cả tools."""
+        tools = self.agent_loop.registry.get_all_tools_flat()
+        return [(t.name, t.description) for t in tools]

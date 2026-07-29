@@ -25,7 +25,8 @@ def build():
     hidden_imports = [
         "PyQt6.QtCore", "PyQt6.QtWidgets", "PyQt6.QtGui", "PyQt6.sip",
         "comtypes", "pycaw", "wmi", "psutil", "speech_recognition",
-        "gtts", "playsound", "pynvml", "nvidia_ml_py", "screen_brightness_control"
+        "gtts", "playsound", "pynvml", "nvidia_ml_py", "screen_brightness_control",
+        "edge_tts"
     ]
     for h in hidden_imports:
         cmd.append(f"--hidden-import={h}")

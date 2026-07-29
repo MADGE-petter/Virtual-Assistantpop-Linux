@@ -77,7 +77,6 @@ class HistoryUsageDialog(FooterDialog):
             f"[{now}] Đăng nhập thành công",
             f"[{now}] Mở cài đặt hệ thống",
             f"[{now}] Sử dụng tính năng chat",
-            f"[{now}] Truy cập admin panel",
         ]
         self.history_text.setText("\n".join(history_data))
         layout.addWidget(self.history_text)

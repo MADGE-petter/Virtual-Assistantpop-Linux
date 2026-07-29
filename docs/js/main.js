@@ -88,3 +88,62 @@ function initSmoothScroll() {
     });
   });
 }
+
+// ---------- Electric Effects ----------
+function initElectricEffects() {
+  const overlay = document.getElementById('electric-overlay');
+  if (!overlay) return;
+
+  function createFlash() {
+    const flash = document.createElement('div');
+    flash.className = 'electric-flash';
+    
+    // Random position and rotation
+    const x = Math.random() * window.innerWidth;
+    const y = Math.random() * window.innerHeight;
+    const rot = Math.random() * 360;
+    
+    flash.style.left = x + 'px';
+    flash.style.top = y + 'px';
+    flash.style.transform = `rotate(${rot}deg)`;
+    
+    document.body.appendChild(flash);
+    
+    // Animation sequence
+    setTimeout(() => {
+      flash.style.opacity = '0.8';
+      flash.style.transition = 'opacity 0.1s ease';
+    }, 10);
+    
+    setTimeout(() => {
+      flash.style.opacity = '0';
+      flash.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => flash.remove(), 500);
+    }, 150);
+  }
+
+  // Randomly trigger flashes
+  function loop() {
+    const delay = 3000 + Math.random() * 7000;
+    setTimeout(() => {
+      createFlash();
+      loop();
+    }, delay);
+  }
+  loop();
+}
+
+// Update DOMContentLoaded to include new effect
+const originalDOMContentLoaded = document.addEventListener('DOMContentLoaded', () => {
+  createStars();
+  initMouseLight();
+  initNavbar();
+  initMobileMenu();
+  initRevealAnimations();
+  initSmoothScroll();
+});
+
+// Since we can't easily wrap the existing listener in this tool, 
+// I will add a separate call or the user can just add it to the main list.
+// Actually, I'll just add the function and a call to it.
+document.addEventListener('DOMContentLoaded', initElectricEffects);

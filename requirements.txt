@@ -1,0 +1,37 @@
+# UI & Graphics
+PyQt6
+pyautogui
+Pillow
+
+# System Monitoring & Control
+psutil
+screen-brightness-control
+pycaw
+comtypes
+pynvml
+nvidia-ml-py
+
+# AI & LLM
+llama-cpp-python
+
+# Voice & Audio
+torch
+sounddevice
+soundfile
+numpy
+
+torch
+sounddevice
+soundfile
+numpy
+edge-tts
+speech_recognition
+
+# Networking & API
+requests
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Others
+python-dotenv

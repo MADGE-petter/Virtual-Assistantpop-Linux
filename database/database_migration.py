@@ -30,18 +30,7 @@ def migrate_database():
             )
         """)
         
-        # 2. Tao bang admin_users (tiếng Việt)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS admin_users (
-                maAdmin INTEGER PRIMARY KEY AUTOINCREMENT,
-                tenAdmin TEXT NOT NULL UNIQUE,
-                matKhauMaHoa TEXT NOT NULL,
-                thoiGianTao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                thoiGianCapNhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 3. Tao bang sessions (tiếng Việt)
+        # 2. Tao bang sessions (tiếng Việt)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 maPhien TEXT PRIMARY KEY,
@@ -144,10 +133,10 @@ def migrate_database():
         """)
         
         cursor.execute("""
-            CREATE TRIGGER IF NOT EXISTS update_admin_users_timestamp 
-            AFTER UPDATE ON admin_users
+            CREATE TRIGGER IF NOT EXISTS update_sessions_timestamp 
+            AFTER UPDATE ON sessions
             BEGIN
-                UPDATE admin_users SET thoiGianCapNhat = CURRENT_TIMESTAMP WHERE maAdmin = NEW.maAdmin;
+                UPDATE sessions SET thoiGianKetThuc = CURRENT_TIMESTAMP WHERE maPhien = NEW.maPhien;
             END
         """)
         
@@ -185,23 +174,6 @@ def import_from_backup(cursor, conn):
                     """, (username,))
         except Exception as e:
             print(f"Khong the import users tu backup: {e}")
-            print("Tao user mac dinh cho admin...")
-            # Tao admin user mac dinh neu co
-            cursor.execute("""
-                INSERT OR IGNORE INTO admin_users (username, password_hash, email)
-                VALUES (?, ?, ?)
-            """, ('admin', 'pbkdf2:sha256:260000$admin$salt', 'admin@popassistant.com'))
-        
-        # Import admin_users
-        backup_cursor.execute("SELECT tenAdmin, matKhauMaHoa FROM admin_users")
-        admins = backup_cursor.fetchall()
-        
-        for admin in admins:
-            username, password = admin
-            cursor.execute("""
-                INSERT OR REPLACE INTO admin_users (username, password_hash)
-                VALUES (?, ?)
-            """, (username, password))
         
         # Import sessions
         backup_cursor.execute("SELECT maPhien, tenKhachHang, thoiGianBatDau, thoiGianKetThuc FROM sessions")
