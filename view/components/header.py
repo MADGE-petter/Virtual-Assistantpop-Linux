@@ -128,7 +128,7 @@ class HeaderWidget(QWidget):
                 color: {COLORS['text_primary'].name()};
             }}
             QPushButton:pressed {{
-                background: {COLORS['bg_pressed'].name()};
+                background: {COLORS['bg_active'].name()};
             }}
         """)
         return btn
