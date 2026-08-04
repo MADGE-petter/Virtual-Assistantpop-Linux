@@ -2,8 +2,6 @@
 import threading
 import time
 
-import speech_recognition as sr
-
 
 class WakeWordDetector:
 
@@ -114,36 +112,12 @@ class WakeWordDetector:
     def _listen_short(self, timeout=2.0):
         """Lắng nghe ngắn - dùng AudioService để tránh xung đột microphone"""
         try:
-            # Ưu tiên dùng AudioService nếu có để tránh xung đột lock
+            # Dùng AudioService nếu có để tránh xung đột lock
             if self.audio_service and hasattr(self.audio_service, 'listen'):
                 # AudioService.listen đã xử lý gate_lock và cooldown
                 text = self.audio_service.listen(timeout=timeout, phrase_time_limit=3)
                 return text
-            r = sr.Recognizer()
-            r.pause_threshold = 0.5
-            r.energy_threshold = 350
-            r.dynamic_energy_threshold = True
-            
-            with sr.Microphone() as source:
-                try:
-                    audio = r.listen(source, timeout=timeout, phrase_time_limit=3)
-                except sr.WaitTimeoutError:
-                    return None
-                    
-            # Thử nhận diện
-            try:
-                text = r.recognize_google(audio, language="vi-VN")
-                return text
-            except sr.UnknownValueError:
-                # Thử tiếng Anh
-                try:
-                    text = r.recognize_google(audio, language="en-US")
-                    return text
-                except:
-                    return None
-            except sr.RequestError:
-                return None
-                
+            return None
         except Exception as e:
             return None 
     def _check_wake_word(self, text):

@@ -29,7 +29,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from view.widgets.custom_line_edit import CustomLineEdit
-from view.ui_helpers import create_ui_footer, position_ui_footer
 
 
 class LoginView(QDialog):
@@ -158,11 +157,9 @@ class LoginView(QDialog):
         register_layout.addStretch()
         
         layout.addLayout(register_layout)
-        create_ui_footer(self)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        position_ui_footer(self)
 
     def save_settings(self):
         """Lưu cài đặt người dùng qua Service"""

@@ -40,7 +40,7 @@ class PopController(QObject):
         self._active = False
         
         # === KHỞI TẠO SERVICES ===
-        self.audio = AudioService(view, auto_learn=True, use_word_tts=True)
+        self.audio = AudioService(view)
         self.sql = SqlService()
         self.actions = ActionHandler(self.audio, view)
         
@@ -98,6 +98,12 @@ class PopController(QObject):
             self.agent_loop.set_app_scanner(AppScanner())
         except Exception:
             pass
+        
+        # === KHỞI TẠO SUB-CONTROLLERS (LEGACY) ===
+        self._init_sub_controllers(view)
+        
+        # LLM will be loaded asynchronously after UI shows
+        self._llm_loaded = False
     
     def _init_llm_service(self):
         """Khởi tạo Gemma 4 E4B LLM Service"""
@@ -105,27 +111,45 @@ class PopController(QObject):
             print("[PopController] Initializing Gemma 4 E4B LLM Service...")
             self._llm_service = get_gemma_service()
             print("[PopController] Gemma LLM Service loaded successfully!")
+            self._llm_loaded = True
+            if self._llm_service:
+                self.agent_loop.set_llm(self._llm_service)
         except Exception as e:
             print(f"[PopController] Warning: Failed to load Gemma LLM: {e}")
             print("[PopController] Falling back to rule-based planning")
             self._llm_service = None
+            self._llm_loaded = True
     
+    def load_llm_async(self):
+        """Load LLM in background thread after UI is shown."""
+        import threading
+        thread = threading.Thread(target=self._init_llm_service, daemon=True)
+        thread.start()
+
     def is_llm_available(self) -> bool:
         """Kiểm tra LLM có sẵn sàng không"""
-        return self._llm_service is not None and self._llm_service.is_loaded()
-    
+        return self._llm_loaded and self._llm_service is not None and self._llm_service.is_loaded()
+
+    def wait_for_llm(self, timeout=30):
+        """Wait for LLM to finish loading."""
+        import time
+        start = time.time()
+        while not self._llm_loaded and time.time() - start < timeout:
+            time.sleep(0.1)
+        return self._llm_loaded
+
     def reload_llm(self):
         """Reload LLM Service"""
         try:
             from service.agent.gemma_llm_service import reset_gemma_service
             reset_gemma_service()
+            self._llm_loaded = False
             self._init_llm_service()
-            if self._llm_service:
-                self.agent_loop.set_llm(self._llm_service)
         except Exception as e:
             print(f"[PopController] Failed to reload LLM: {e}")
 
-        # === KHỞI TẠO SUB-CONTROLLERS (LEGACY) ===
+    def _init_sub_controllers(self, view):
+        """Khởi tạo sub-controllers (legacy)."""
         self.wake_detector = WakeWordDetector(self.audio, view)
         self.voice = VoiceController(self.audio)
         self.voice.init_wake_detector(self.wake_detector)
@@ -168,6 +192,9 @@ class PopController(QObject):
         
         self.system.start_monitoring(self.user.get_display_name())
         self._enter_active_mode()
+        
+        # Load LLM asynchronously after UI is responsive
+        self.load_llm_async()
     
     def stop(self):
         """Dừng assistant."""

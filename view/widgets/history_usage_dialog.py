@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from view.ui_helpers import create_ui_footer
 from view.widgets.base_dialog import FooterDialog
 
 
@@ -23,7 +22,6 @@ class HistoryUsageDialog(FooterDialog):
         self.setWindowTitle(" Lịch sử sử dụng")
         self.setFixedSize(500, 400)
         self.setup_ui()
-        create_ui_footer(self)
 
     def setup_ui(self):
         self.setStyleSheet("""

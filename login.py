@@ -78,6 +78,7 @@ def main():
             def _init_main_window():
                 nonlocal main_window
                 try:
+                    
                     import main
                     main_window = main.create_main_window(username)
 

@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from view.ui_helpers import create_ui_footer
 from view.widgets.base_dialog import FooterDialog
 
 _DIALOG_STYLE = """
@@ -146,7 +145,6 @@ class PersonalInfoDialog(FooterDialog):
         self.setFixedSize(600, 680)
         self.setup_ui()
         self.load_data()
-        create_ui_footer(self)
 
     # ------------------------------------------------------------------
     # UI Setup

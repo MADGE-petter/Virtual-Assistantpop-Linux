@@ -20,13 +20,6 @@ sounddevice
 soundfile
 numpy
 
-torch
-sounddevice
-soundfile
-numpy
-edge-tts
-speech_recognition
-
 # Networking & API
 requests
 fastapi
