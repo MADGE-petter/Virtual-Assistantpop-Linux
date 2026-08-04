@@ -19,16 +19,14 @@ from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
-    QMenu,
-    QMenuBar,
-    QMessageBox,
     QPushButton,
-    QSlider,
-    QSpinBox,
+    QSizePolicy,
+    QSpacerItem,
     QVBoxLayout,
     QWidget,
 )
 from view.widgets.custom_line_edit import CustomLineEdit
+from view.widgets.vietnamese_input import VietnameseInputLineEdit
 
 
 class LoginView(QDialog):
@@ -469,12 +467,12 @@ class LoginView(QDialog):
         layout.addWidget(title)
         
         # Username
-        username = QLineEdit()
+        username = VietnameseInputLineEdit()
         username.setPlaceholderText("Tên đăng ký")
         layout.addWidget(username)
         
         # Password
-        password = QLineEdit()
+        password = VietnameseInputLineEdit()
         password.setEchoMode(QLineEdit.EchoMode.Password)
         password.setPlaceholderText("Mật khẩu đăng ký")
         layout.addWidget(password)
@@ -486,7 +484,7 @@ class LoginView(QDialog):
         captcha_layout.setSpacing(15)
         captcha_layout.setContentsMargins(0, 0, 0, 0)
         
-        captcha_input = QLineEdit()
+        captcha_input = VietnameseInputLineEdit()
         captcha_input.setPlaceholderText("Mã captcha")
         captcha_input.setMaxLength(4)
         captcha_input.setFixedWidth(20)

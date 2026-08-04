@@ -2,10 +2,10 @@
 
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtProperty, QRectF, QPointF
 from PyQt6.QtGui import QPainter, QColor, QConicalGradient, QFont, QPen, QPainterPath, QBrush
-from PyQt6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QTextEdit,
-                             QPushButton, QSizePolicy)
+from PyQt6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy)
 from view.styles.colors import COLORS
 from view.styles.typography import Typography
+from view.widgets.vietnamese_input import VietnameseInputTextEdit
 
 
 class PlusButton(QWidget):
@@ -145,7 +145,7 @@ class InputArea(QWidget):
         container_layout.setSpacing(12)
 
         # Text input — clean, beautiful typography
-        self.text_input = QTextEdit()
+        self.text_input = VietnameseInputTextEdit()
         self.text_input.setPlaceholderText("Ask anything...")
         self.text_input.setFont(Typography.body())
         self.text_input.setStyleSheet(f"""
