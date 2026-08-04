@@ -44,17 +44,15 @@ class PopController(QObject):
         self.sql = SqlService()
         self.actions = ActionHandler(self.audio, view)
         
-        # === KHỞI TẠO GEMMA LLM SERVICE ===
-        self._llm_service = None
-        self._init_llm_service()
-        
         # === AI AGENT SYSTEM ===
         # Agent Loop thay thế ConversationFlowService cũ
+        # LLM service sẽ được load async SAU khi UI hiển thị
+        self._llm_service = None
         self.agent_loop = AgentLoop(
             audio_service=self.audio,
             sql_service=self.sql,
             app_scanner=None,  # Sẽ set sau
-            llm_service=self._llm_service  # Gemma LLM Service
+            llm_service=None  # Sẽ set sau khi load async
         )
         self._use_agent_mode = True  # Toggle giữa agent mode và legacy mode
         
@@ -193,8 +191,10 @@ class PopController(QObject):
         self.system.start_monitoring(self.user.get_display_name())
         self._enter_active_mode()
         
-        # Load LLM asynchronously after UI is responsive
-        self.load_llm_async()
+        # Load LLM asynchronously after UI is fully shown (delay 1.5s)
+        # Use QTimer.singleShot to ensure UI event loop is running
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(1500, self.load_llm_async)
     
     def stop(self):
         """Dừng assistant."""

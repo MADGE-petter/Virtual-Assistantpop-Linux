@@ -97,7 +97,7 @@ class HeaderWidget(QWidget):
                 border-radius: 8px;
                 font-size: 13px;
                 padding: 6px 10px;
-                font-family: "Inter";
+                font-family: "Noto Sans", "DejaVu Sans", sans-serif;
             }}
             QPushButton:hover {{
                 background: {COLORS['error'].name()};
@@ -121,16 +121,37 @@ class HeaderWidget(QWidget):
                 border: none;
                 border-radius: 8px;
                 font-size: 13px;
-                font-family: "Inter";
+                font-family: "Noto Sans", "DejaVu Sans", sans-serif;
             }}
             QPushButton:hover {{
                 background: {COLORS['bg_hover'].name()};
                 color: {COLORS['text_primary'].name()};
             }}
             QPushButton:pressed {{
-                background: {COLORS['bg_active'].name()};
+                background: {COLORS['bg_pressed'].name()};
             }}
         """)
+        return btn
+
+    def _make_close_button(self) -> QPushButton:
+        btn = QPushButton("✕")
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setFixedSize(32, 32)
+        btn.setStyleSheet(f"""
+    QPushButton {{
+        background: transparent;
+        color: {COLORS['text_secondary'].name()};
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        padding: 6px 10px;
+        font-family: "Noto Sans", "DejaVu Sans", sans-serif;
+    }}
+    QPushButton:hover {{
+        background: {COLORS['error'].name()};
+        color: {COLORS['text_inverse'].name()};
+    }}
+    """)
         return btn
 
     def set_conversation_title(self, title: str):

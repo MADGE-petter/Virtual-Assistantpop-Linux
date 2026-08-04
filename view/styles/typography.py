@@ -1,4 +1,4 @@
-"""Typography System - Inter, Geist, IBM Plex Mono."""
+"""Typography System - Noto Sans (Vietnamese-friendly), DejaVu Sans, JetBrains Mono."""
 
 from PyQt6.QtGui import QFont, QFontDatabase
 from PyQt6.QtCore import QFile, QIODevice
@@ -7,10 +7,10 @@ from PyQt6.QtCore import QFile, QIODevice
 class Typography:
     """Typography system with font scales and weights."""
     
-    # Font families
-    PRIMARY = "Inter"
-    SECONDARY = "Geist"
-    MONO = "IBM Plex Mono"
+    # Font families - dùng font có sẵn trên hệ thống, hỗ trợ tiếng Việt tốt
+    PRIMARY = "Noto Sans"
+    SECONDARY = "DejaVu Sans"
+    MONO = "JetBrains Mono"
     
     # Weights
     LIGHT = QFont.Weight.Light

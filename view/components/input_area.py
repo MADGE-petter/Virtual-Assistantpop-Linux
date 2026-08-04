@@ -153,7 +153,7 @@ class InputArea(QWidget):
                 background: transparent;
                 border: none;
                 color: {COLORS['text_primary'].name()};
-                font-family: "Inter", sans-serif;
+                font-family: "Noto Sans", "DejaVu Sans", sans-serif;
                 font-size: 15px;
                 line-height: 1.6;
                 selection-background-color: rgba(0, 255, 170, 0.2);

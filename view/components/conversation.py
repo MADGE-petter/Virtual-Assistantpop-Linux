@@ -43,7 +43,7 @@ class ModelSelector(QWidget):
                 border-radius: 8px;
                 color: {COLORS['text_primary'].name()};
                 padding: 0 12px;
-                font-family: "Inter";
+                font-family: "Noto Sans", "DejaVu Sans", sans-serif;
             }}
             QComboBox:hover {{
                 border-color: {COLORS['border_light'].name()};

@@ -12,7 +12,7 @@ class MarkdownRenderer:
     CSS = f"""
         <style>
             body {{
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-family: 'Noto Sans', 'DejaVu Sans', -apple-system, BlinkMacSystemFont, sans-serif;
                 font-size: 14px;
                 line-height: 1.6;
                 color: {COLORS['text_primary'].name()};
