@@ -230,7 +230,9 @@ class PopController(QObject):
         if self._llm_service and self._llm_loaded:
             # Use agent loop if available
             if self.agent_loop:
-                self.agent_loop.process_user_input(text)
+                response = self.agent_loop.process_request(text)
+                if response:
+                    return response
         else:
             # Fallback to conversation service
             from service.conversation_service import ConversationService
