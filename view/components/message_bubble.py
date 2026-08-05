@@ -62,7 +62,7 @@ class MessageBubble(QWidget):
 
         if self.is_user:
             # User card — right-aligned, subtle accent surface
-            card_rect = QRect(40, 0, rect.width() - 40, rect.height())
+            card_rect = QRectF(40, 0, rect.width() - 40, rect.height())
             path = QPainterPath()
             path.addRoundedRect(card_rect, radius, radius)
 
@@ -84,7 +84,7 @@ class MessageBubble(QWidget):
             painter.fillPath(shadow_path, QBrush(grad))
         else:
             # Assistant card — elevated card surface
-            card_rect = QRect(0, 0, rect.width() - 40, rect.height())
+            card_rect = QRectF(0, 0, rect.width() - 40, rect.height())
             path = QPainterPath()
             path.addRoundedRect(card_rect, radius, radius)
 
@@ -106,9 +106,9 @@ class MessageBubble(QWidget):
         if self._hover_opacity > 0:
             hover_path = QPainterPath()
             if self.is_user:
-                hover_path.addRoundedRect(QRect(40, 0, rect.width() - 40, rect.height()), radius, radius)
+                hover_path.addRoundedRect(QRectF(40, 0, rect.width() - 40, rect.height()), radius, radius)
             else:
-                hover_path.addRoundedRect(QRect(0, 0, rect.width() - 40, rect.height()), radius, radius)
+                hover_path.addRoundedRect(QRectF(0, 0, rect.width() - 40, rect.height()), radius, radius)
             hover_color = QColor(255, 255, 255, int(self._hover_opacity * 12))
             painter.fillPath(hover_path, hover_color)
 
