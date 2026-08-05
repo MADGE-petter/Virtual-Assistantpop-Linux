@@ -16,6 +16,10 @@ class VietnameseInputTextEdit(QTextEdit):
         self._last_text = ""
         self.textChanged.connect(self._on_text_changed)
     
+    def _on_text_changed(self):
+        """Emit signal when text changes."""
+        self.textChangedWithInput.emit(self.toPlainText())
+    
     def keyPressEvent(self, event: QKeyEvent):
         """Xử lý phím bấm với SmartInputManager."""
         if event.key() == Qt.Key.Key_Space:
