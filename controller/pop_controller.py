@@ -228,11 +228,16 @@ class PopController(QObject):
         """Xử lý tin nhắn từ user."""
         # Process through conversation flow
         if self._llm_service and self._llm_loaded:
-            # Use agent loop if available
+            # Use agent loop if available - run in background thread
             if self.agent_loop:
-                response = self.agent_loop.process_request(text)
-                if response:
-                    return response
+                import threading
+                result_container = {'response': None}
+                def process_in_thread():
+                    result_container['response'] = self.agent_loop.process_request(text)
+                thread = threading.Thread(target=process_in_thread, daemon=True)
+                thread.start()
+                # Return a placeholder, actual response will be handled via signals
+                return "..."
         else:
             # Fallback to conversation service
             from service.conversation_service import ConversationService
