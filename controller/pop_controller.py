@@ -226,20 +226,20 @@ class PopController(QObject):
 
     def handle_user_message(self, text: str):
         """Xử lý tin nhắn từ user."""
-        if self.conversation:
-            self.conversation.add_message(text, is_user=True)
-            # Process through conversation flow
-            if self._llm_service and self._llm_loaded:
-                # Use agent loop if available
-                if self.agent_loop:
-                    self.agent_loop.process_user_input(text)
-            else:
-                # Fallback to conversation service
-                from service.conversation_service import ConversationService
-                conv_svc = ConversationService(self.audio, self.sql, self.actions, self.user)
-                response = conv_svc.process_exchange(text)
-                if response:
-                    self.conversation.add_message(response, is_user=False)
+        # Process through conversation flow
+        if self._llm_service and self._llm_loaded:
+            # Use agent loop if available
+            if self.agent_loop:
+                self.agent_loop.process_user_input(text)
+        else:
+            # Fallback to conversation service
+            from service.conversation_service import ConversationService
+            conv_svc = ConversationService(self.audio, self.sql, self.actions, self.user)
+            response = conv_svc.process_exchange(text)
+            if response:
+                # Return response so view can add it as bot message
+                return response
+        return None
     
     # ============================================================
     # PRIVATE 

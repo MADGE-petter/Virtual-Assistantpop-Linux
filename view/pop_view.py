@@ -186,7 +186,9 @@ class PopView(QMainWindow):
     def _handle_send(self, text: str):
         self.conversation.add_message(text, is_user=True)
         if self._controller:
-            self._controller.handle_user_message(text)
+            response = self._controller.handle_user_message(text)
+            if response:
+                self.conversation.add_message(response, is_user=False)
         else:
             self.conversation.add_message(
                 f"Echo: {text}", is_user=False
