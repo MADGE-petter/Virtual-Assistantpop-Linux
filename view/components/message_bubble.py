@@ -58,7 +58,7 @@ class MessageBubble(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect().adjusted(0, 0, -1, -1)
-        radius = 14
+        radius = 14.0  # Must be float for addRoundedRect
 
         if self.is_user:
             # User card — right-aligned, subtle accent surface
