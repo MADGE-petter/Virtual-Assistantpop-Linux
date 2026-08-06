@@ -75,7 +75,7 @@ class MessageBubble(QWidget):
             # Thin accent left border
             painter.setClipPath(path)
             painter.fillRect(QRect(40, 0, 3, rect.height()), COLORS['accent_start'])
-            painter.setClippingEnabled(False)
+            painter.setClipping(False)  # Reset clipping
 
             # Soft shadow
             shadow_path = QPainterPath()
