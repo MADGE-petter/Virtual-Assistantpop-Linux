@@ -1,6 +1,6 @@
 """Message Bubble - Premium document-style message cards."""
 
-from PyQt6.QtCore import Qt, QRect, QSize
+from PyQt6.QtCore import Qt, QRect, QRectF, QSize
 from PyQt6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QBrush
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSizePolicy
 from view.styles.colors import COLORS
