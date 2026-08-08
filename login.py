@@ -7,9 +7,6 @@ Chạy giao diện đăng nhập
 
 import os
 import sys
-
-# Set environment variables for Vietnamese input method (Fcitx5)
-# These must be set BEFORE any PyQt6 imports
 os.environ['QT_IM_MODULE'] = 'fcitx'
 os.environ['XMODIFIERS'] = '@im=fcitx'
 os.environ['GTK_IM_MODULE'] = 'fcitx'
@@ -24,7 +21,7 @@ def main():
         app = QApplication(sys.argv)
         app.setApplicationName("Pop Assistant Login")
         app.setOrganizationName("Pop AI")
-        app.setQuitOnLastWindowClosed(True)
+        app.setQuitOnLastWindowClosed(False)  # Don't quit when login dialog closes
         
         # Set application icon
         try:
@@ -52,80 +49,43 @@ def main():
                     _monitor_ref.stop_ohm()
             except Exception as e:
                 print(f"[Login] Lỗi dừng OHM: {e}")
-        
         app.aboutToQuit.connect(on_app_exit)
 
         from service.login_service import LoginService
-        from view.login_view import LoginView
+        from view.components.login_view import LoginView
+        from main import create_main_window
 
         # Tạo Service ở Controller level (login.py đóng vai trò Controller)
         login_service = LoginService()
-        
         login_window = None
         main_window = None
         
         def on_login_success(username):
-            nonlocal main_window
             print(f"Login successful: {username}")
-
-            # Đóng login window NGAY LẬP TỨC để UI không bị đơ
-            login_window.hide()
-            login_window.close()
-            app.processEvents()
-
-            # Dùng QTimer.singleShot(0) để đẩy việc khởi tạo nặng
-            # vào event loop, tránh block main thread
-            def _init_main_window():
-                nonlocal main_window
-                try:
-                    
-                    import main
-                    main_window = main.create_main_window(username)
-
-                    if main_window is None:
-                        return
-
-                    main_window.show()
-                    main_window.raise_()
-                    main_window.activateWindow()
-                    main_window.setFocus()
-                    app.processEvents()
-                except ImportError as e:
-                    print(f"Lỗi import: {e}")
-                    import traceback
-                    traceback.print_exc()
-                except Exception as e:
-                    print(f"Lỗi khởi tạo giao diện chính: {e}")
-                    import traceback
-                    traceback.print_exc()
-
-            QTimer.singleShot(0, _init_main_window)
+            # View đã show toast "Đăng nhập thành công!" rồi, không cần show thêm
+            nonlocal main_window
+            main_window = create_main_window(username)
+            if main_window:
+                main_window.show()
+                print("Main window shown")
+                # Close login window
+                if login_window:
+                    login_window.close()
         
-        # Bây giờ mới tạo login window
-         # Controller inject Service vào View
         login_window = LoginView(login_service)
         login_window.login_success.connect(on_login_success)
+        result = login_window.exec()
         
-        # Show login window
-        login_window.show()    
-        # Run the application
-        result = app.exec()
-        # Check final state
-        widgets = QApplication.topLevelWidgets()
-        visible_count = 0
-        for widget in widgets:
-            if widget.isVisible():
-                visible_count += 1
-                title = widget.windowTitle() if hasattr(widget, 'windowTitle') else 'No Title'
-                print(f"  Visible: {title}")
-        
-        print(f"Total visible: {visible_count}")
+        # Start the application event loop
+        sys.exit(app.exec())
             
     except ImportError as e:
         print(f"Chi tiết lỗi: {e}")
         input("Nhấn Enter để thoát...")
     except Exception as e:
         print(f"Lỗi khởi động ứng dụng: {e}")
+        import traceback
+        traceback.print_exc()
         input("Nhấn Enter để thoát...")
 
 if __name__ == "__main__":

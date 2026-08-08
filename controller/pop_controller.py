@@ -203,6 +203,19 @@ class PopController(QObject):
         self.voice.stop_wake_word_detection()
         self.system.stop_monitoring()
         self.conversation.end_session()
+        
+        # Stop analytics
+        if hasattr(self, '_analytics') and self._analytics:
+            self._analytics.stop()
+        
+        # Stop alert manager
+        if hasattr(self, '_alert_mgr') and self._alert_mgr:
+            self._alert_mgr.stop()
+        
+        # Stop audio service
+        if hasattr(self, 'audio') and self.audio:
+            # Audio service might have threads, ensure they stop
+            pass
     
     def sleep(self, manual=True):
         """Vào sleep mode."""

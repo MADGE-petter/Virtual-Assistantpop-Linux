@@ -19,15 +19,33 @@ from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
     QWidget,
+    QMessageBox,
+    QSpinBox,
+    QSlider,
 )
-from view.widgets.custom_line_edit import CustomLineEdit
-from view.widgets.vietnamese_input import VietnameseInputLineEdit
 
+# POP Assistant Design Tokens
+POP_GRADIENT = "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFAA, stop:1 #00CCFF)"
+POP_GRADIENT_VERTICAL = "qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #00FFAA, stop:1 #00CCFF)"
+POP_CYAN = "#00FFAA"
+POP_TEAL = "#00CCFF"
+POP_BG_DEEP = "#0A0E12"
+POP_BG_FRAME = "#111820"
+POP_BG_PANEL = "#0F161E"
+POP_BORDER_SUBTLE = "rgba(255, 255, 255, 0.06)"
+POP_BORDER_DEFAULT = "rgba(255, 255, 255, 0.10)"
+POP_BORDER_FOCUS = "#00CCFF"
+POP_TEXT_PRIMARY = "#E8F0F8"
+POP_TEXT_SECONDARY = "#8BA4B8"
+POP_TEXT_MUTED = "#5A6E7E"
+POP_ACCENT_DIM = "rgba(0, 255, 170, 0.15)"
+POP_ACCENT_GLOW = "rgba(0, 204, 255, 0.4)"
 
 class LoginView(QDialog):
     login_success = pyqtSignal(str)
@@ -47,54 +65,54 @@ class LoginView(QDialog):
         self.setWindowTitle("Pop Assistant")
         self.setFixedSize(400, 550)
         
-        # Set style giống giao diện chính
-        self.setStyleSheet("""
-            QDialog {
+        # Set style giống giao diện chính - dùng POP Assistant gradient
+        self.setStyleSheet(f"""
+            QDialog {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #0f0f1a, stop:1 #1a1a2a);
-            }
-            QLineEdit {
-                background: rgba(25, 25, 45, 180);
-                border: 1px solid rgba(0, 255, 136, 40);
+                               stop:0 {POP_BG_DEEP}, stop:1 {POP_BG_FRAME});
+            }}
+            QLineEdit {{
+                background: {POP_BG_PANEL};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 10px;
                 padding: 12px;
-                color: rgba(255, 255, 255, 240);
+                color: {POP_TEXT_PRIMARY};
                 font-size: 15px;
                 font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
-            }
-            QLineEdit:focus {
-                border: 2px solid rgba(0, 255, 136, 80);
-                background: rgba(25, 25, 45, 220);
-            }
-            QPushButton {
-                background: rgba(0, 255, 136, 20);
-                border: 1px solid rgba(0, 255, 136, 50);
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {POP_BORDER_FOCUS};
+                background: {POP_BG_FRAME};
+            }}
+            QPushButton {{
+                background: {POP_ACCENT_DIM};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 10px;
                 padding: 12px 25px;
-                color: rgba(0, 255, 136, 240);
+                color: {POP_CYAN};
                 font-size: 15px;
                 font-weight: 600;
                 font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 200px;
                 min-height: 20px;
-            }
-            QPushButton:hover {
-                background: rgba(0, 255, 136, 40);
-                border: 1px solid rgba(0, 255, 136, 80);
-                color: rgba(0, 255, 136, 255);
-            }
-            QPushButton:pressed {
-                background: rgba(0, 255, 136, 60);
-                color: rgba(0, 255, 136, 255);
-            }
-            QLabel {
-                color: rgba(255, 255, 255, 220);
+            }}
+            QPushButton:hover {{
+                background: {POP_ACCENT_GLOW};
+                border: 1px solid {POP_BORDER_FOCUS};
+                color: {POP_CYAN};
+            }}
+            QPushButton:pressed {{
+                background: {POP_TEAL};
+                color: {POP_BG_DEEP};
+            }}
+            QLabel {{
+                color: {POP_TEXT_SECONDARY};
                 font-size: 15px;
                 font-family: 'Noto Sans', 'DejaVu Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 padding: 5px;
-            }
+            }}
         """)
         
         # Main layout
@@ -105,28 +123,27 @@ class LoginView(QDialog):
         
         # Title
         title = QLabel("Pop Assistant")
-        title.setStyleSheet("""
-            QLabel {
-                color: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
-                               stop:0 #00ffaa, stop:1 #00ccff);
+        title.setStyleSheet(f"""
+            QLabel {{
+                color: {POP_GRADIENT};
                 font-size: 32px;
                 font-weight: 300;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 text-align: center;
                 padding: 20px;
-            }
+            }}
         """)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
         # Username
-        self.login_username = CustomLineEdit()
+        self.login_username = QLineEdit()
         self.login_username.setPlaceholderText("Tên đăng nhập")
         layout.addWidget(self.login_username)
         
         # Password
-        self.login_password = CustomLineEdit()
-        self.login_password.setEchoMode(CustomLineEdit.EchoMode.Password)
+        self.login_password = QLineEdit()
+        self.login_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.login_password.setPlaceholderText("Mật khẩu")
         layout.addWidget(self.login_password)
         
@@ -140,14 +157,14 @@ class LoginView(QDialog):
         register_layout.addStretch()
         
         register_label = QLabel("Chưa có tài khoản? Đăng ký")
-        register_label.setStyleSheet("""
-            QLabel {
-                color: rgba(0, 255, 136, 200);
+        register_label.setStyleSheet(f"""
+            QLabel {{
+                color: {POP_CYAN};
                 font-size: 13px;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 padding: 10px;
                 font-weight: 500;
-            }
+            }}
         """)
         register_label.setCursor(Qt.CursorShape.PointingHandCursor)
         register_label.mousePressEvent = self.show_register_dialog
@@ -168,43 +185,73 @@ class LoginView(QDialog):
         dialog = QDialog(self)
         dialog.setWindowTitle("🔧 Tùy chỉnh hệ thống")
         dialog.setFixedSize(450, 400)
-        dialog.setStyleSheet("""
-            QDialog {
+        dialog.setStyleSheet(f"""
+            QDialog {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #1a1f2a, stop:1 #2a2f3a);
-                color: #e0e0e0;
-            }
-            QLabel {
-                color: #e0e0e0;
+                               stop:0 {POP_BG_DEEP}, stop:1 {POP_BG_FRAME});
+                color: {POP_TEXT_PRIMARY};
+            }}
+            QLabel {{
+                color: {POP_TEXT_SECONDARY};
                 font-size: 12px;
                 padding: 5px;
-            }
-            QCheckBox {
-                color: #e0e0e0;
+            }}
+            QCheckBox {{
+                color: {POP_TEXT_PRIMARY};
                 font-size: 12px;
                 padding: 5px;
-            }
-            QSpinBox {
-                background: rgba(30, 35, 50, 90);
-                border: 1px solid rgba(0, 255, 170, 40);
+            }}
+            QCheckBox::indicator {{
+                width: 16px;
+                height: 16px;
+                border: 1px solid {POP_BORDER_DEFAULT};
+                border-radius: 4px;
+                background: {POP_BG_PANEL};
+            }}
+            QCheckBox::indicator:checked {{
+                background: {POP_GRADIENT};
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QSpinBox {{
+                background: {POP_BG_PANEL};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 6px;
                 padding: 8px;
-                color: #e0e0e0;
+                color: {POP_TEXT_PRIMARY};
                 font-size: 12px;
-            }
-            QSlider {
-                min-height: 20px;
-            }
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 rgba(39, 174, 96, 0.8), stop:1 rgba(34, 153, 84, 0.8));
-                border: 2px solid rgba(39, 174, 96, 0.9);
+            }}
+            QSpinBox:focus {{
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QSlider::groove:horizontal {{
+                height: 4px;
+                background: {POP_BORDER_SUBTLE};
+                border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                width: 16px;
+                height: 16px;
+                margin: -6px 0;
+                background: {POP_GRADIENT};
                 border-radius: 8px;
-                color: #ffffff;
+            }}
+            QPushButton {{
+                background: {POP_ACCENT_DIM};
+                border: 1px solid {POP_BORDER_DEFAULT};
+                border-radius: 8px;
+                color: {POP_CYAN};
                 font-size: 12px;
                 font-weight: 700;
                 padding: 8px 16px;
-            }
+            }}
+            QPushButton:hover {{
+                background: {POP_ACCENT_GLOW};
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QPushButton:pressed {{
+                background: {POP_TEAL};
+                color: {POP_BG_DEEP};
+            }}
         """)
         
         layout = QVBoxLayout(dialog)
@@ -292,30 +339,57 @@ class LoginView(QDialog):
         dialog = QDialog(self)
         dialog.setWindowTitle("🔊 Cài đặt âm thanh")
         dialog.setFixedSize(400, 300)
-        dialog.setStyleSheet("""
-            QDialog {
+        dialog.setStyleSheet(f"""
+            QDialog {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #1a1f2a, stop:1 #2a2f3a);
-                color: #e0e0e0;
-            }
-            QLabel {
-                color: #e0e0e0;
+                               stop:0 {POP_BG_DEEP}, stop:1 {POP_BG_FRAME});
+                color: {POP_TEXT_PRIMARY};
+            }}
+            QLabel {{
+                color: {POP_TEXT_SECONDARY};
                 font-size: 12px;
                 padding: 5px;
-            }
-            QSlider {
-                min-height: 20px;
-            }
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 rgba(243, 156, 18, 0.8), stop:1 rgba(230, 126, 34, 0.8));
-                border: 2px solid rgba(243, 156, 18, 0.9);
+            }}
+            QSlider::groove:horizontal {{
+                height: 4px;
+                background: {POP_BORDER_SUBTLE};
+                border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                width: 16px;
+                height: 16px;
+                margin: -6px 0;
+                background: {POP_GRADIENT};
                 border-radius: 8px;
-                color: #ffffff;
+            }}
+            QSpinBox {{
+                background: {POP_BG_PANEL};
+                border: 1px solid {POP_BORDER_DEFAULT};
+                border-radius: 6px;
+                padding: 8px;
+                color: {POP_TEXT_PRIMARY};
+                font-size: 12px;
+            }}
+            QSpinBox:focus {{
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QPushButton {{
+                background: {POP_ACCENT_DIM};
+                border: 1px solid {POP_BORDER_DEFAULT};
+                border-radius: 8px;
+                color: {POP_CYAN};
                 font-size: 12px;
                 font-weight: 700;
                 padding: 8px 16px;
-            }
+            }}
+            QPushButton:hover {{
+                background: {POP_ACCENT_GLOW};
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QPushButton:pressed {{
+                background: {POP_TEAL};
+                color: {POP_BG_DEEP};
+            }}
         """)
         
         layout = QVBoxLayout(dialog)
@@ -375,12 +449,16 @@ class LoginView(QDialog):
         # Tạo label trực tiếp trên dialog
         toast_label = QLabel(message, self)
         toast_label.setFixedSize(300, 50)
+        success_bg = "rgba(0, 212, 126, 0.8)"  # SUCCESS color
+        success_border = "rgba(0, 212, 126, 1.0)"
+        error_bg = "rgba(255, 71, 87, 0.8)"    # ERROR color
+        error_border = "rgba(255, 71, 87, 1.0)"
         toast_label.setStyleSheet(f"""
             QLabel {{
-                background: {'rgba(81, 207, 102, 200)' if is_success else 'rgba(255, 107, 107, 200)'};
-                border: 1px solid {'rgba(81, 207, 102, 100)' if is_success else 'rgba(255, 107, 107, 100)'};
+                background: {success_bg if is_success else error_bg};
+                border: 1px solid {success_border if is_success else error_border};
                 border-radius: 8px;
-                color: white;
+                color: {POP_TEXT_PRIMARY};
                 font-size: 14px;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 font-weight: 500;
@@ -407,45 +485,58 @@ class LoginView(QDialog):
         dialog = QDialog(self)
         dialog.setWindowTitle("Đăng ký")
         dialog.setFixedSize(400, 400)  # Tăng kích thước cho 3 ô
-        dialog.setStyleSheet("""
-            QDialog {
+        dialog.setStyleSheet(f"""
+            QDialog {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                               stop:0 #0f0f1a, stop:1 #1a1a2a);
-            }
-            QLineEdit {
-                background: rgba(25, 25, 45, 180);
-                border: 1px solid rgba(0, 255, 136, 40);
+                               stop:0 {POP_BG_DEEP}, stop:1 {POP_BG_FRAME});
+            }}
+            QLineEdit {{
+                background: {POP_BG_PANEL};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 8px;
                 padding: 12px;
-                color: white;
+                color: {POP_TEXT_PRIMARY};
                 font-size: 14px;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 250px;
-            }
-            QPushButton {
-                background: rgba(0, 255, 136, 20);
-                border: 1px solid rgba(0, 255, 136, 50);
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {POP_BORDER_FOCUS};
+                background: {POP_BG_FRAME};
+            }}
+            QPushButton {{
+                background: {POP_ACCENT_DIM};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 8px;
                 padding: 12px 20px;
-                color: rgba(0, 255, 136, 240);
+                color: {POP_CYAN};
                 font-size: 14px;
                 font-weight: 600;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 min-width: 100px;
-            }
-            QPushButton:hover {
-                background: rgba(0, 255, 136, 40);
-                color: rgba(0, 255, 136, 255);
-            }
-            QPushButton#cancel {
-                background: rgba(255, 107, 107, 20);
-                border: 1px solid rgba(255, 107, 107, 50);
-                color: rgba(255, 107, 107, 240);
-            }
-            QPushButton#cancel:hover {
-                background: rgba(255, 107, 107, 40);
-                color: rgba(255, 107, 107, 255);
-            }
+            }}
+            QPushButton:hover {{
+                background: {POP_ACCENT_GLOW};
+                border: 1px solid {POP_BORDER_FOCUS};
+                color: {POP_CYAN};
+            }}
+            QPushButton:pressed {{
+                background: {POP_TEAL};
+                color: {POP_BG_DEEP};
+            }}
+            QPushButton#cancel {{
+                background: rgba(255, 107, 107, 0.2);
+                border: 1px solid rgba(255, 107, 107, 0.5);
+                color: #FF6B6B;
+            }}
+            QPushButton#cancel:hover {{
+                background: rgba(255, 107, 107, 0.4);
+                color: #FF6B6B;
+            }}
+            QPushButton#cancel:pressed {{
+                background: #FF6B6B;
+                color: {POP_BG_DEEP};
+            }}
         """)
         
         layout = QVBoxLayout()
@@ -454,25 +545,25 @@ class LoginView(QDialog):
         
         # Title
         title = QLabel("Đăng ký tài khoản")
-        title.setStyleSheet("""
-            QLabel {
-                color: rgba(0, 255, 136, 240);
+        title.setStyleSheet(f"""
+            QLabel {{
+                color: {POP_GRADIENT};
                 font-size: 16px;
                 font-weight: 600;
                 font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
                 padding: 15px;
-            }
+            }}
         """)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
         # Username
-        username = VietnameseInputLineEdit()
+        username = QLineEdit()
         username.setPlaceholderText("Tên đăng ký")
         layout.addWidget(username)
         
         # Password
-        password = VietnameseInputLineEdit()
+        password = QLineEdit()
         password.setEchoMode(QLineEdit.EchoMode.Password)
         password.setPlaceholderText("Mật khẩu đăng ký")
         layout.addWidget(password)
@@ -484,7 +575,7 @@ class LoginView(QDialog):
         captcha_layout.setSpacing(15)
         captcha_layout.setContentsMargins(0, 0, 0, 0)
         
-        captcha_input = VietnameseInputLineEdit()
+        captcha_input = QLineEdit()
         captcha_input.setPlaceholderText("Mã captcha")
         captcha_input.setMaxLength(4)
         captcha_input.setFixedWidth(20)
@@ -494,26 +585,27 @@ class LoginView(QDialog):
         
         # Chuyển captcha thành button
         captcha_button = QPushButton(captcha_text)
-        captcha_button.setStyleSheet("""
-            QPushButton {
-                background: rgba(0, 255, 136, 20);
-                border: 1px solid rgba(0, 255, 136, 50);
+        captcha_button.setStyleSheet(f"""
+            QPushButton {{
+                background: {POP_ACCENT_DIM};
+                border: 1px solid {POP_BORDER_DEFAULT};
                 border-radius: 8px;
-                color: rgba(0, 255, 136, 240);
+                color: {POP_CYAN};
                 font-size: 16px;
                 font-weight: bold;
                 font-family: 'Courier New', monospace;
                 padding: 10px 6px;
                 min-width: 45px;
                 max-width: 45px;
-            }
-            QPushButton:hover {
-                background: rgba(0, 255, 136, 40);
-                border: 1px solid rgba(0, 255, 136, 80);
-            }
-            QPushButton:pressed {
-                background: rgba(0, 255, 136, 60);
-            }
+            }}
+            QPushButton:hover {{
+                background: {POP_ACCENT_GLOW};
+                border: 1px solid {POP_BORDER_FOCUS};
+            }}
+            QPushButton:pressed {{
+                background: {POP_TEAL};
+                color: {POP_BG_DEEP};
+            }}
         """)
         
         def refresh_captcha():
