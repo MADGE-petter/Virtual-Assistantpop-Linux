@@ -5,6 +5,9 @@ Tối ưu cho: 4GB VRAM + 8GB RAM
 
 import os
 from llama_cpp import Llama
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 # Global singleton instance
@@ -35,8 +38,8 @@ class GemmaLLMService:
     
     def load(self):
         """Load model vào memory"""
-        print(f"[GemmaLLM] Loading model from {self.model_path}...")
-        print(f"[GemmaLLM] Config: n_ctx={self.n_ctx}, n_gpu_layers={self.n_gpu_layers}, n_threads={self.n_threads}")
+        logger.info(f"[GemmaLLM] Loading model from {self.model_path}...")
+        logger.info(f"[GemmaLLM] Config: n_ctx={self.n_ctx}, n_gpu_layers={self.n_gpu_layers}, n_threads={self.n_threads}")
         
         self._llm = Llama(
             model_path=self.model_path,
@@ -48,7 +51,7 @@ class GemmaLLMService:
             verbose=False
         )
         
-        print("[GemmaLLM] Model loaded successfully!")
+        logger.info("[GemmaLLM] Model loaded successfully!")
         return self
     
     def generate(self, prompt: str, max_tokens: int = None, temperature: float = None) -> str:
@@ -122,7 +125,7 @@ class GemmaLLMService:
         if self._llm:
             del self._llm
             self._llm = None
-            print("[GemmaLLM] Model unloaded")
+            logger.info("[GemmaLLM] Model unloaded")
     
     def get_memory_usage(self) -> dict:
         """Lấy thông tin memory usage"""

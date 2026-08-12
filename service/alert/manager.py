@@ -1,15 +1,21 @@
 """
-Alert Manager - Orchestrator chính
+Alert Manager - Orchestrator chính (đã gộp InteractiveAlertService)
 """
 
+import re
 import threading
 import time
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
+
+import psutil
 
 from database.alert_repository import AlertRepository
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from .checker import BatteryMonitor, CPUMonitor, DiskMonitor, RAMMonitor, TempMonitor
-from .interactive import InteractiveAlertHandler
 from .notifier import AlertNotifier
 from .types import Alert, AlertLevel, AlertThreshold
 
@@ -67,8 +73,9 @@ class AlertManager:
         self._wellness_enabled = True
         self._is_sleeping = False
         
-        # Interactive alert helper
-        self.interactive_handler = InteractiveAlertHandler(interactive_callback)
+        # Interactive alert state (merged from InteractiveAlertService)
+        self._interactive_alerts: Dict[str, dict] = {}
+        self._interactive_lock = threading.RLock()
         
         # Initialize alert persistence
         self._init_alert_persistence()
@@ -100,9 +107,11 @@ class AlertManager:
         """Bắt đầu giám sát"""
         if not self._running:
             self._running = True
-            self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
-            self._monitor_thread.start()
-            print(f"[AlertManager] Started monitoring with {len(self.monitors)} monitors")
+            self._monitor_thread = get_thread_manager("AlertManager").start_thread(
+                self._monitor_loop,
+                name="Alert-Monitor"
+            )
+            logger.info(f"[AlertManager] Started monitoring with {len(self.monitors)} monitors")
     
     def stop(self):
         """Dừng giám sát"""
@@ -110,7 +119,7 @@ class AlertManager:
             self._running = False
             if self._monitor_thread and self._monitor_thread.is_alive():
                 self._monitor_thread.join(timeout=5)
-            print("[AlertManager] Stopped monitoring")
+            logger.info("[AlertManager] Stopped monitoring")
     
     def _monitor_loop(self):
         """Vòng lặp giám sát chính"""
@@ -121,8 +130,8 @@ class AlertManager:
                     alert, is_recovery = monitor.check()
                     
                     if alert:
-                        if self.interactive_handler.is_interactive_alert(alert):
-                            self.interactive_handler.handle_alert(alert)
+                        if self._is_interactive_alert(alert):
+                            self._handle_interactive_alert(alert)
                         elif self._should_alert(alert):
                             with self._lock:
                                 self._alerts.append(alert)
@@ -133,17 +142,17 @@ class AlertManager:
                     
                     elif is_recovery:
                         metric = monitor.threshold.metric
-                        self.interactive_handler.clear_alert(metric)
+                        self._clear_interactive_alert(metric)
                         from datetime import datetime
                         self.notifier.speak_recovery(metric, f"{metric.upper()} đã trở lại bình thường")
                 
-                self.interactive_handler.check_reminders()
+                self._check_interactive_reminders()
                 self._check_wellness()
                 
                 time.sleep(self.check_interval)
                 
             except Exception as e:
-                print(f"[AlertManager] Monitor loop error: {e}")
+                logger.error(f"[AlertManager] Monitor loop error: {e}")
                 import traceback
                 traceback.print_exc()
                 time.sleep(self.check_interval)
@@ -222,9 +231,9 @@ class AlertManager:
             alerts = self._load_alerts_from_db(self.MAX_ALERT_HISTORY)
             with self._lock:
                 self._alerts = alerts
-            print(f"[AlertManager] Loaded {len(alerts)} alerts from database")
+            logger.info(f"[AlertManager] Loaded {len(alerts)} alerts from database")
         except Exception as e:
-            print(f"[AlertManager] Error loading alerts from memory: {e}")
+            logger.error(f"[AlertManager] Error loading alerts from memory: {e}")
             with self._lock:
                 self._alerts = []
     
@@ -250,8 +259,8 @@ class AlertManager:
             if self.audio_service:
                 try:
                     self.audio_service.speak(msg)
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"[AlertManager] speak error: {e}")
     
     # Public API
     def set_sleep_mode(self, enabled: bool):
@@ -281,9 +290,9 @@ class AlertManager:
         # Update in database via repository
         if alert_found:
             if self._alert_repo.acknowledge_alert(alert_id):
-                print(f"[AlertManager] Alert {alert_id} acknowledged and synced to database")
+                logger.info(f"[AlertManager] Alert {alert_id} acknowledged and synced to database")
         else:
-            print(f"[AlertManager] Alert {alert_id} not found for acknowledgment")
+            logger.warning(f"[AlertManager] Alert {alert_id} not found for acknowledgment")
     
     def get_system_status(self) -> dict:
         import psutil
@@ -293,7 +302,8 @@ class AlertManager:
                 'percent': battery.percent if battery else None,
                 'plugged': battery.power_plugged if battery else None
             }
-        except:
+        except Exception as e:
+            logger.error(f"[AlertManager] sensors_battery error: {e}")
             battery_info = {'percent': None, 'plugged': None}
         
         return {
@@ -315,10 +325,10 @@ class AlertManager:
         """
         result = self._alert_repo.cleanup_old_alerts(days_to_keep, max_rows)
         if result['time_deleted'] > 0 or result['row_deleted'] > 0:
-            print(f"[AlertManager] Database cleanup completed: {result['time_deleted']} by time, {result['row_deleted']} by count")
+            logger.info(f"[AlertManager] Database cleanup completed: {result['time_deleted']} by time, {result['row_deleted']} by count")
         else:
             total = self._alert_repo.get_alert_count()
-            print(f"[AlertManager] No cleanup needed (total: {total} rows)")
+            logger.info(f"[AlertManager] No cleanup needed (total: {total} rows)")
     
     def clear_all_alerts(self):
         """Clear all alerts from both RAM and database"""
@@ -329,16 +339,189 @@ class AlertManager:
         
         # Clear database via repository
         if self._alert_repo.delete_all_alerts():
-            print(f"[AlertManager] Cleared all alerts from database and vacuumed")
+            logger.info(f"[AlertManager] Cleared all alerts from database and vacuumed")
+
+    # ===== Interactive Alert Methods (merged from InteractiveAlertService) =====
+    
+    def _is_interactive_alert(self, alert: Alert) -> bool:
+        return alert.metric in ["ram", "temperature"] and alert.value >= 80.0
+
+    def _handle_interactive_alert(self, alert: Alert):
+        metric = alert.metric
+
+        with self._interactive_lock:
+            if metric not in self._interactive_alerts:
+                self._interactive_alerts[metric] = {
+                    'alert': alert,
+                    'state': 'waiting_confirmation',
+                    'last_prompt': time.time(),
+                    'reminder_count': 0
+                }
+                if self.interactive_callback:
+                    self.interactive_callback(alert, 'ask_details')
+            else:
+                state = self._interactive_alerts[metric]
+                if time.time() - state['last_prompt'] > 600:
+                    state['last_prompt'] = time.time()
+                    state['reminder_count'] += 1
+                    if self.interactive_callback:
+                        self.interactive_callback(alert, 'remind')
+
+    def _check_interactive_reminders(self):
+        current_time = time.time()
+
+        with self._interactive_lock:
+            for metric, state in list(self._interactive_alerts.items()):
+                if current_time - state['last_prompt'] > 600:
+                    state['last_prompt'] = current_time
+                    state['reminder_count'] += 1
+                    if self.interactive_callback:
+                        self.interactive_callback(state['alert'], 'remind')
+
+    def _clear_interactive_alert(self, metric: str):
+        with self._interactive_lock:
+            self._interactive_alerts.pop(metric, None)
 
     def handle_interactive_response(self, metric: str, response: str, context: dict = None):
-        self.interactive_handler.handle_response(metric, response, context)
+        """Xử lý phản hồi từ người dùng cho interactive alert"""
+        with self._interactive_lock:
+            if metric not in self._interactive_alerts:
+                return
+
+            state = self._interactive_alerts[metric]
+            alert = state['alert']
+
+            if state['state'] == 'waiting_confirmation':
+                if self._is_positive_response(response):
+                    state['state'] = 'showing_details'
+                    state['last_prompt'] = time.time()
+                    if self.interactive_callback:
+                        self.interactive_callback(alert, 'show_details')
+                else:
+                    state['last_prompt'] = time.time()
+
+            elif state['state'] == 'showing_details':
+                if self._is_positive_response(response):
+                    state['state'] = 'waiting_close_selection'
+                    state['last_prompt'] = time.time()
+                    if self.interactive_callback:
+                        self.interactive_callback(alert, 'ask_close_app')
+                else:
+                    state['last_prompt'] = time.time()
+
+            elif state['state'] == 'waiting_close_selection':
+                apps_to_close = self._parse_app_selection(response, context or {})
+                if apps_to_close:
+                    if isinstance(apps_to_close, list):
+                        results = []
+                        for app in apps_to_close:
+                            success = self._close_process(app)
+                            results.append((app, success))
+                        succeeded = [app for app, ok in results if ok]
+                        failed = [app for app, ok in results if not ok]
+                        if succeeded:
+                            del self._interactive_alerts[metric]
+                            if self.interactive_callback:
+                                self.interactive_callback(alert, 'close_success', {'closed_apps': succeeded, 'failed_apps': failed})
+                        elif self.interactive_callback:
+                            self.interactive_callback(alert, 'close_failed', {'failed_apps': failed})
+                    else:
+                        success = self._close_process(apps_to_close)
+                        if success:
+                            del self._interactive_alerts[metric]
+                            if self.interactive_callback:
+                                self.interactive_callback(alert, 'close_success', {'closed_app': apps_to_close})
+                        else:
+                            if self.interactive_callback:
+                                self.interactive_callback(alert, 'close_failed', {'failed_app': apps_to_close})
+                else:
+                    if self.interactive_callback:
+                        self.interactive_callback(alert, 'ask_close_app')
 
     def get_interactive_context(self, metric: str) -> dict:
-        return self.interactive_handler.get_context(metric)
+        """Lấy context cho interactive alert (top processes)"""
+        if metric not in self._interactive_alerts:
+            return {}
+
+        if self._interactive_alerts[metric]['state'] not in ['showing_details', 'waiting_close_selection']:
+            return {}
+
+        if metric == 'ram':
+            from service.system_monitoring_service import get_top_ram_processes
+            processes = get_top_ram_processes(5)
+        else:
+            from service.system_monitoring_service import get_top_cpu_processes
+            processes = get_top_cpu_processes(5)
+
+        return {'top_processes': processes}
 
     def get_active_interactive_metrics(self) -> list:
-        return list(self.interactive_handler._interactive_alerts.keys())
+        """Lấy danh sách metric đang có interactive alert"""
+        with self._interactive_lock:
+            return list(self._interactive_alerts.keys())
+
+    def _is_positive_response(self, response: str) -> bool:
+        positive_words = ['có', 'yes', 'ok', 'được', 'ừ', 'vâng', 'tôi muốn', 'show', 'xem', 'đóng']
+        negative_words = ['không', 'no', 'khỏi', 'thôi', 'bỏ qua', 'skip']
+        response_lower = response.lower()
+        for word in negative_words:
+            if word in response_lower:
+                return False
+        for word in positive_words:
+            if word in response_lower:
+                return True
+        return False
+
+    def _parse_app_selection(self, response: str, context: dict) -> Optional[Union[dict, List[dict]]]:
+        response_lower = response.lower()
+
+        if 'top_processes' in context:
+            top_processes = context['top_processes']
+            selected = []
+
+            matches = re.findall(r'\b(?:app|số)?\s*(\d+)\b', response_lower)
+            for match in matches:
+                app_index = int(match) - 1
+                if 0 <= app_index < len(top_processes):
+                    proc = top_processes[app_index]
+                    if proc not in selected:
+                        selected.append(proc)
+
+            for proc in top_processes:
+                if proc['name'].lower() in response_lower and proc not in selected:
+                    selected.append(proc)
+
+            if selected:
+                return selected if len(selected) > 1 else selected[0]
+
+        return None
+
+    def _close_process(self, process_info: dict) -> bool:
+        try:
+            pid = process_info.get('pid')
+            name = process_info.get('name')
+            if pid:
+                proc = psutil.Process(pid)
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except psutil.TimeoutExpired:
+                    proc.kill()
+                return True
+            elif name:
+                closed_count = 0
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        if proc.info['name'] and name.lower() in proc.info['name'].lower():
+                            proc.terminate()
+                            closed_count += 1
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+                return closed_count > 0
+        except Exception as e:
+            logger.error(f"[AlertManager] _close_process error: {e}")
+            return False
+        return False
 
 
 # Singleton

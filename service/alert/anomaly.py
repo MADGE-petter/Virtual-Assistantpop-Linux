@@ -12,6 +12,9 @@ Key features for Evaluation/Khảo sát:
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AnomalyDetectionService:
@@ -84,7 +87,7 @@ class AnomalyDetectionService:
                 return None
                 
         except Exception as e:
-            print(f"[AnomalyDetectionService] Error detecting app anomaly: {e}")
+            logger.error(f"[AnomalyDetectionService] Error detecting app anomaly: {e}")
             return None
     
     def detect_behavior_drift(self, user_id: int, days_window: int = 7) -> Optional[Dict]:
@@ -174,7 +177,7 @@ class AnomalyDetectionService:
                 return None
                 
         except Exception as e:
-            print(f"[AnomalyDetectionService] Error detecting drift: {e}")
+            logger.error(f"[AnomalyDetectionService] Error detecting drift: {e}")
             return None
     
     def evaluate_learning_progress(self, user_id: int) -> Dict:
@@ -265,7 +268,7 @@ class AnomalyDetectionService:
                 }
                 
         except Exception as e:
-            print(f"[AnomalyDetectionService] Error evaluating learning: {e}")
+            logger.error(f"[AnomalyDetectionService] Error evaluating learning: {e}")
             return {'learning_stage': 'unknown'}
     
     def generate_evaluation_report(self, user_id: int) -> Dict:
@@ -328,5 +331,5 @@ class AnomalyDetectionService:
                 }
                 
         except Exception as e:
-            print(f"[AnomalyDetectionService] Error generating report: {e}")
+            logger.error(f"[AnomalyDetectionService] Error generating report: {e}")
             return {}

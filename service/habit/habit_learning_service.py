@@ -6,6 +6,9 @@ Chịu trách nhiệm học và cập nhật thói quen người dùng
 
 from datetime import datetime
 from typing import Dict, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HabitLearningService:
@@ -48,7 +51,7 @@ class HabitLearningService:
                     if old_conf < self.BURST_CONFIDENCE_BOOST:
                         new_conf = self.BURST_CONFIDENCE_BOOST
                         self.repo.update_habit(habit_id, today_count, new_conf, now)
-                        print(f"[HabitLearning] BURST detected: '{target}' opened {today_count}x today, "
+                        logger.info(f"[HabitLearning] BURST detected: '{target}' opened {today_count}x today, "
                               f"confidence boosted {old_conf:.2f} -> {new_conf:.2f}")
                         return True
                 else:
@@ -57,11 +60,11 @@ class HabitLearningService:
                         user_id, 'app_usage', target, time_bucket, day_type,
                         frequency=today_count, confidence=self.BURST_CONFIDENCE_BOOST
                     )
-                    print(f"[HabitLearning] BURST detected: NEW habit '{target}' created with "
+                    logger.info(f"[HabitLearning] BURST detected: NEW habit '{target}' created with "
                           f"confidence {self.BURST_CONFIDENCE_BOOST} ({today_count}x today)")
                     return True
         except Exception as e:
-            print(f"[HabitLearning] Error checking burst: {e}")
+            logger.error(f"[HabitLearning] Error checking burst: {e}")
         return False
     
     def update_habit(self, user_id: int, habit_type: str, target: str,
@@ -82,6 +85,11 @@ class HabitLearningService:
                 habit_id, old_freq, old_conf, last_seen = existing
                 
                 # Calculate days since last seen
+                if isinstance(last_seen, str):
+                    try:
+                        last_seen = datetime.fromisoformat(last_seen)
+                    except ValueError:
+                        last_seen = None
                 days_inactive = (now - last_seen).days if last_seen else 0
                 
                 # Apply temporal decay to confidence
@@ -96,8 +104,8 @@ class HabitLearningService:
                 # Create new habit
                 self.repo.insert_habit(user_id, habit_type, target, time_bucket, day_type)
                 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitLearningService] update_habit error: {e}")
     
     def learn_sequence(self, user_id: int, app_before: str, app_after: str,
                        time_between_seconds: int) -> None:
@@ -112,6 +120,11 @@ class HabitLearningService:
                 seq_id, old_freq, old_conf, old_avg_time, last_updated = existing
                 
                 # Apply temporal decay
+                if isinstance(last_updated, str):
+                    try:
+                        last_updated = datetime.fromisoformat(last_updated)
+                    except ValueError:
+                        last_updated = None
                 days_inactive = (now - last_updated).days if last_updated else 0
                 new_confidence = self._calculate_decayed_confidence(old_conf, days_inactive)
                 
@@ -126,8 +139,8 @@ class HabitLearningService:
             else:
                 self.repo.insert_sequence(user_id, app_before, app_after, time_between_seconds)
                 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitLearningService] learn_sequence error: {e}")
     
     def detect_and_save_workflow(self, user_id: int, app_chain: str,
                                   session_timeout_minutes: int = 30) -> bool:
@@ -146,6 +159,11 @@ class HabitLearningService:
                     wf_id, old_freq, old_conf, last_executed = existing
                     
                     # Apply temporal decay
+                    if isinstance(last_executed, str):
+                        try:
+                            last_executed = datetime.fromisoformat(last_executed)
+                        except ValueError:
+                            last_executed = None
                     days_inactive = (datetime.now() - last_executed).days if last_executed else 0
                     new_confidence = self._calculate_decayed_confidence(old_conf, days_inactive)
                     
@@ -161,5 +179,6 @@ class HabitLearningService:
             
             return False
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitLearningService] detect_and_save_workflow error: {e}")
             return False

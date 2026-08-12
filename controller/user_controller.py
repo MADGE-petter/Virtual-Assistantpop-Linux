@@ -3,6 +3,9 @@
 from typing import Optional
 
 from controller.interfaces import ISqlService, IUserService
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class UserController:
@@ -17,7 +20,7 @@ class UserController:
         if username:
             self.user_service.login_name = username
             self.user_service.display_name = self.user_service.get_display_name_by_login(username)
-            print(f"[UserController] Loaded user: login={username}, display={self.user_service.display_name}")
+            logger.info(f"[UserController] Loaded user: login={username}, display={self.user_service.display_name}")
     
     def get_display_name(self):
         """Lấy tên hiển thị."""

@@ -30,6 +30,10 @@ from PyQt6.QtWidgets import (
     QSlider,
 )
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 # POP Assistant Design Tokens
 POP_GRADIENT = "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00FFAA, stop:1 #00CCFF)"
 POP_GRADIENT_VERTICAL = "qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #00FFAA, stop:1 #00CCFF)"
@@ -475,7 +479,7 @@ class LoginView(QDialog):
         toast_label.show()
         toast_label.raise_()
         
-        print(f"Toast hien thi: {message} tai ({x}, {y})")
+        logger.debug("Toast hien thi: %s tai (%d, %d)", message, x, y)
         
         # Tự động ẩn sau 3 giây
         QTimer.singleShot(3000, toast_label.deleteLater)

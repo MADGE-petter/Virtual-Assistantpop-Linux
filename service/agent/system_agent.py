@@ -7,6 +7,9 @@ import psutil
 import sys
 import os
 from service.agent import BaseAgent, ToolSchema, ToolResult, RiskLevel
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SystemAgent(BaseAgent):
@@ -103,8 +106,8 @@ class SystemAgent(BaseAgent):
                         if entries:
                             temp = entries[0].current
                             break
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[SystemAgent] sensors_temperatures error: {e}")
             
             # Pin
             battery = None
@@ -112,8 +115,8 @@ class SystemAgent(BaseAgent):
                 bat = psutil.sensors_battery()
                 if bat:
                     battery = bat.percent
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[SystemAgent] sensors_battery error: {e}")
             
             status_text = f"CPU: {cpu}%, RAM: {ram}%, Disk: {disk}%"
             if temp:
@@ -139,11 +142,8 @@ class SystemAgent(BaseAgent):
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
                 try:
                     processes.append(proc.info)
-                except:
-                    pass
-            
-            if sort_by == "ram":
-                processes.sort(key=lambda x: x.get('memory_percent', 0) or 0, reverse=True)
+                except Exception as e:
+                    logger.error(f"[SystemAgent] process_iter error: {e}")
             else:
                 processes.sort(key=lambda x: x.get('cpu_percent', 0) or 0, reverse=True)
             
@@ -168,9 +168,8 @@ class SystemAgent(BaseAgent):
                     if name.lower() in proc.info['name'].lower():
                         proc.kill()
                         killed.append(proc.info['name'])
-                except:
-                    pass
-            
+                except Exception as e:
+                    logger.error(f"[SystemAgent] kill process error: {e}")
             if killed:
                 return ToolResult(success=True, data={"text": f"Đã tắt: {', '.join(killed)}"})
             return ToolResult(success=False, error=f"Không tìm thấy tiến trình: {name}")

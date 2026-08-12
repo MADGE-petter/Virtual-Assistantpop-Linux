@@ -1,7 +1,7 @@
 """PopController - Facade điều phối chính với AI Agent."""
 import os
 import sys
-import threading
+from typing import Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -11,12 +11,15 @@ from controller.system_controller import SystemController
 from controller.user_controller import UserController
 from controller.voice_controller import VoiceController
 from model.Sql import SqlService
-from service.alert_service import AlertManager
+from service.alert import AlertManager
 from service.analytics_service import get_analytics_service
 from service.AudioService import AudioService
-from service.interactive_alert_service import InteractiveAlertService
 from service.user_service import UserService
 from service.wake_word import WakeWordDetector
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # === AI AGENT IMPORTS ===
 from service.agent.agent_loop import AgentLoop
@@ -67,19 +70,33 @@ class PopController(QObject):
                 self._user_svc.display_name = loaded_name
             # else: leave as None so bot asks for name
         
-        # Alert interaction service
-        self._interactive_alert_service = InteractiveAlertService(self.audio, view=view)
+        # Alert interaction service - now handled directly by AlertManager
+        def on_alert(alert_data: dict):
+            if self.view:
+                try:
+                    self.view.show_alert_notification(alert_data)
+                except Exception as e:
+                    logger.error(f"[PopController] Error showing alert notification: {e}")
+
+        def on_interactive_alert(alert, action, context=None):
+            try:
+                message = self._get_interactive_message(alert, action, context)
+                if message:
+                    self.audio.speak(message)
+            except Exception as e:
+                logger.error(f"[AlertManager] Error handling interactive alert: {e}")
+                import traceback
+                traceback.print_exc()
 
         # Alert & Analytics - use login username when available, fall back to display name
         analytics_user = self._user_svc.login_name if getattr(self._user_svc, 'login_name', None) and self._user_svc.login_name != "bạn" else getattr(self._user_svc, 'display_name', None) or "bạn"
         self._alert_mgr = AlertManager(
             self.audio,
-            self._interactive_alert_service.on_alert,
+            on_alert,
             30,
             analytics_user,
-            interactive_callback=self._interactive_alert_service.on_interactive_alert,
+            interactive_callback=on_interactive_alert,
         )
-        self._interactive_alert_service.set_alert_manager(self._alert_mgr)
         self._analytics = get_analytics_service(analytics_user or "user")
         self._analytics.start()
 
@@ -87,15 +104,15 @@ class PopController(QObject):
         if login_username:
             try:
                 self.actions.app_handler.set_login_name(login_username)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[PopController] Error setting login name: {e}")
         
         # Set app scanner cho Agent Loop
         try:
             from service.app_scanner import AppScanner
             self.agent_loop.set_app_scanner(AppScanner())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[PopController] Error setting app scanner: {e}")
         
         # === KHỞI TẠO SUB-CONTROLLERS (LEGACY) ===
         self._init_sub_controllers(view)
@@ -106,23 +123,24 @@ class PopController(QObject):
     def _init_llm_service(self):
         """Khởi tạo Gemma 4 E4B LLM Service"""
         try:
-            print("[PopController] Initializing Gemma 4 E4B LLM Service...")
+            logger.info("[PopController] Initializing Gemma 4 E4B LLM Service...")
             self._llm_service = get_gemma_service()
-            print("[PopController] Gemma LLM Service loaded successfully!")
+            logger.info("[PopController] Gemma LLM Service loaded successfully!")
             self._llm_loaded = True
             if self._llm_service:
                 self.agent_loop.set_llm(self._llm_service)
         except Exception as e:
-            print(f"[PopController] Warning: Failed to load Gemma LLM: {e}")
-            print("[PopController] Falling back to rule-based planning")
+            logger.warning(f"[PopController] Warning: Failed to load Gemma LLM: {e}")
+            logger.info("[PopController] Falling back to rule-based planning")
             self._llm_service = None
             self._llm_loaded = True
     
     def load_llm_async(self):
         """Load LLM in background thread after UI is shown."""
-        import threading
-        thread = threading.Thread(target=self._init_llm_service, daemon=True)
-        thread.start()
+        get_thread_manager("PopController").start_thread(
+            self._init_llm_service,
+            name="LLM-Loader"
+        )
 
     def is_llm_available(self) -> bool:
         """Kiểm tra LLM có sẵn sàng không"""
@@ -136,6 +154,57 @@ class PopController(QObject):
             time.sleep(0.1)
         return self._llm_loaded
 
+    def _get_interactive_message(self, alert, action: str, context=None) -> Optional[str]:
+        """Get message for interactive alert action (merged from InteractiveAlertService)"""
+        if action == 'ask_details':
+            return f"{alert.message}. Bạn có muốn xem tiến trình chi tiết không?"
+
+        if action == 'remind':
+            return f"Nhắc nhở: {alert.message}. Bạn có muốn xem tiến trình chi tiết không?"
+
+        if action == 'show_details':
+            from service.system_monitoring_service import (
+                format_process_list,
+                get_top_cpu_processes,
+                get_top_ram_processes,
+            )
+
+            if alert.metric == 'ram':
+                processes = get_top_ram_processes(5)
+                process_list = format_process_list(processes, 'ram')
+                return f"Top 5 ứng dụng dùng RAM nhiều nhất:\n{process_list}\n\nBạn có muốn đóng ứng dụng nào không?"
+            else:
+                processes = get_top_cpu_processes(5)
+                process_list = format_process_list(processes, 'cpu')
+                return f"Top 5 ứng dụng dùng CPU nhiều nhất:\n{process_list}\n\nBạn có muốn đóng ứng dụng nào không?"
+
+        if action == 'ask_close_app':
+            return "Bạn muốn đóng ứng dụng nào trong Top 5? Hãy nói tên ứng dụng hoặc số thứ tự (1, 2, 3, 4, 5)."
+
+        if action == 'close_success':
+            closed_apps = context.get('closed_apps') if context else None
+            failed_apps = context.get('failed_apps') if context else None
+            if closed_apps:
+                app_names = ', '.join([app.get('name', 'ứng dụng') for app in closed_apps])
+                if failed_apps:
+                    failed_names = ', '.join([app.get('name', 'ứng dụng') for app in failed_apps])
+                    return f"Đã đóng {app_names} thành công. Không thể đóng {failed_names}."
+                return f"Đã đóng {app_names} thành công."
+            closed_app = context.get('closed_app', {}) if context else {}
+            app_name = closed_app.get('name', 'ứng dụng')
+            return f"Đã đóng {app_name} thành công."
+
+        if action == 'close_failed':
+            failed_apps = context.get('failed_apps') if context else None
+            if failed_apps:
+                failed_names = ', '.join([app.get('name', 'ứng dụng') for app in failed_apps])
+                return f"Không thể đóng {failed_names}. Vui lòng thử lại hoặc đóng thủ công."
+            failed_app = context.get('failed_app', {}) if context else {}
+            app_name = failed_app.get('name', 'ứng dụng')
+            return f"Không thể đóng {app_name}. Vui lòng thử lại hoặc đóng thủ công."
+
+        return None
+
     def reload_llm(self):
         """Reload LLM Service"""
         try:
@@ -144,7 +213,7 @@ class PopController(QObject):
             self._llm_loaded = False
             self._init_llm_service()
         except Exception as e:
-            print(f"[PopController] Failed to reload LLM: {e}")
+            logger.error(f"[PopController] Failed to reload LLM: {e}")
 
     def _init_sub_controllers(self, view):
         """Khởi tạo sub-controllers (legacy)."""
@@ -158,7 +227,7 @@ class PopController(QObject):
             self.sql,
             self.actions,
             self.user,
-            self._interactive_alert_service,
+            self._alert_mgr,
         )
         
         # === SETUP CALLBACKS ===
@@ -243,12 +312,13 @@ class PopController(QObject):
         if self._llm_service and self._llm_loaded:
             # Use agent loop if available - run in background thread
             if self.agent_loop:
-                import threading
                 result_container = {'response': None}
                 def process_in_thread():
                     result_container['response'] = self.agent_loop.process_request(text)
-                thread = threading.Thread(target=process_in_thread, daemon=True)
-                thread.start()
+                get_thread_manager("PopController").start_thread(
+                    process_in_thread,
+                    name="Agent-Process"
+                )
                 # Return a placeholder, actual response will be handled via signals
                 return "..."
         else:
@@ -375,7 +445,7 @@ class PopController(QObject):
                 self.audio.speak(message)
                 
         except Exception as e:
-            print(f"[PopController] Error in interactive alert: {e}")
+            logger.error(f"[PopController] Error in interactive alert: {e}")
             import traceback
             traceback.print_exc()
     
@@ -396,7 +466,11 @@ class PopController(QObject):
     
     def _start_conversation(self, from_wake_up: bool = False):
         """Bắt đầu conversation thread."""
-        threading.Thread(target=self._run_conversation, args=(from_wake_up,), daemon=True).start()
+        get_thread_manager("PopController").start_thread(
+            self._run_conversation,
+            args=(from_wake_up,),
+            name="Conversation-Loop"
+        )
     
     def _run_conversation(self, from_wake_up: bool = False):
         """Conversation main loop - hỗ trợ cả Agent mode và Legacy mode."""
@@ -406,7 +480,7 @@ class PopController(QObject):
             else:
                 self._run_legacy_conversation(from_wake_up)
         except Exception as e:
-            print(f"[PopController] Conversation error: {e}")
+            logger.error(f"[PopController] Conversation error: {e}")
             import traceback
             traceback.print_exc()
     
@@ -431,7 +505,7 @@ class PopController(QObject):
                     self.audio.speak(response)
                     
             except Exception as e:
-                print(f"[AgentLoop] Error: {e}")
+                logger.error(f"[AgentLoop] Error: {e}")
                 import traceback
                 traceback.print_exc()
     
@@ -481,7 +555,7 @@ class PopController(QObject):
     def set_llm_service(self, llm_service):
         """Gắn LLM service vào Agent Loop."""
         self.agent_loop.set_llm(llm_service)
-        print("[PopController] LLM service integrated")
+        logger.info("[PopController] LLM service integrated")
     
     def get_agent_loop(self) -> AgentLoop:
         """Lấy Agent Loop để debug/kiểm tra."""

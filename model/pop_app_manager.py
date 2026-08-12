@@ -1,6 +1,9 @@
 import os
 import subprocess
 import winreg
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def find_application_like_search(app_name: str):
@@ -28,9 +31,8 @@ def find_application_like_search(app_name: str):
                             pass
                 except OSError:
                     break
-    except Exception:
-        pass
-    
+    except Exception as e:
+            logger.error(f"[PopAppManager] Registry search error: {e}")
     # 2. Tìm trong Program Files
     program_paths = [
         r"C:\Program Files",
@@ -66,8 +68,8 @@ def find_application_like_search(app_name: str):
                     if (app_name_lower in file_name.lower() and 
                         file_name.endswith('.exe')):
                         found_paths.append(os.path.join(path_dir, file_name))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"[PopAppManager] PATH search error: {e}")
     
     return found_paths
 
@@ -85,13 +87,13 @@ def _find_exe_in_folder(folder_path):
 
 def open_application_like_search(app_name: str):
     """Mở ứng dụng như Windows Search - tìm tự động và mở app đầu tiên tìm thấy."""
-    print(f"Searching for application: {app_name}")
+    logger.info(f"Searching for application: {app_name}")
     
     found_paths = find_application_like_search(app_name)
     
     if found_paths:
         app_path = found_paths[0]
-        print(f"Found application at: {app_path}")
+        logger.info(f"Found application at: {app_path}")
         
         try:
             if app_path.endswith('.lnk'):
@@ -105,7 +107,8 @@ def open_application_like_search(app_name: str):
         try:
             subprocess.Popen(["start", "search:", app_name], shell=True)
             return f"Đã mở tìm kiếm Windows cho {app_name}."
-        except Exception:
+        except Exception as e:
+            logger.error(f"[PopAppManager] Windows search fallback error: {e}")
             return f"Không tìm thấy {app_name}. Vui lòng kiểm tra tên ứng dụng."
 
 

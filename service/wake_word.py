@@ -1,6 +1,9 @@
 """Wake Word Detection module - Phát hiện từ khóa kích hoạt."""
 import threading
 import time
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class WakeWordDetector:
@@ -65,7 +68,7 @@ class WakeWordDetector:
                 text = self._listen_short(timeout=2.0)
                 if not text or text == "...":
                     continue
-                print(f"[WakeWord] '{text}'")
+                logger.debug(f"[WakeWord] '{text}'")
                 text_lower = text.lower().strip()
                 
                 # Kiểm tra wake word
@@ -85,14 +88,14 @@ class WakeWordDetector:
                         try:
                             self.view.update_user_text(f"{text}")
                         except Exception as e:
-                            print(f"[WakeWord] ✗ Error updating UI: {e}")
+                            logger.error(f"[WakeWord] ✗ Error updating UI: {e}")
                     
                     # Gọi callback xử lý (optional)
                     if callback:
                         try:
                             callback(text)
                         except Exception as e:
-                            print(f"[WakeWord] ✗ Error in callback: {e}")
+                            logger.error(f"[WakeWord] ✗ Error in callback: {e}")
                     
                     # Reset sau khi phát hiện
                     self.wake_detected = False
@@ -101,13 +104,13 @@ class WakeWordDetector:
                     time.sleep(1.0)
                     
             except Exception as e:
-                print(f"[WakeWord] ✗ Error in listen_loop: {e}")
+                logger.error(f"[WakeWord] ✗ Error in listen_loop: {e}")
                 import traceback
                 traceback.print_exc()
                 time.sleep(0.5)
         
         # Vòng lặp kết thúc
-        print(f"[WakeWord] Listen loop ended. is_listening={self.is_listening}, stop_event={self.stop_event.is_set()}")
+        logger.info(f"[WakeWord] Listen loop ended. is_listening={self.is_listening}, stop_event={self.stop_event.is_set()}")
         
     def _listen_short(self, timeout=2.0):
         """Lắng nghe ngắn - dùng AudioService để tránh xung đột microphone"""
@@ -123,7 +126,7 @@ class WakeWordDetector:
     def _check_wake_word(self, text):
         for wake_word in self.wake_words:
             if wake_word in text:
-                print(f"[WakeWord] Detected '{wake_word}' in '{text}'")
+                logger.debug(f"[WakeWord] Detected '{wake_word}' in '{text}'")
                 return True
         return False
     def is_wake_detected(self):

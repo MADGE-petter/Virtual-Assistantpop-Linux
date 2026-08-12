@@ -155,12 +155,10 @@ def get_app_stylesheet(colors: ColorTokens, radius: RadiusTokens, shadows: Shado
             background-color: {colors.BG_FRAME}; /* Dark glass surface */
             border: 1px solid {colors.BORDER_SUBTLE}; /* Subtle border */
             border-radius: {radius.LG}px;
-            box-shadow: {shadows.MD}; /* Floating effect */
         }}
 
         #outerFrame[activeWindow="true"] {{
             border: 1px solid {colors.BORDER_FOCUS};
-            box-shadow: {shadows.ACCENT_GLOW}, {shadows.MD};
         }}
 
         /* Main Content Area (inner panel) */

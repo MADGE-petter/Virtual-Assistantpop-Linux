@@ -4,6 +4,9 @@ Wrap AudioService thành Agent để Planner có thể gọi speak, listen, ask_
 """
 
 from service.agent import BaseAgent, ToolSchema, ToolResult, RiskLevel
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class VoiceAgent(BaseAgent):
@@ -66,9 +69,9 @@ class VoiceAgent(BaseAgent):
     def _speak(self, text: str) -> ToolResult:
         if self._audio:
             self._audio.speak(text)
+            logger.info(f"[Voice] {text}")
             return ToolResult(success=True, data={"spoken": text})
-        print(f"[Voice] {text}")
-        return ToolResult(success=True, data={"spoken": text})
+        return ToolResult(success=False, error="Audio service not available")
     
     def _listen(self, timeout: int = 10) -> ToolResult:
         if self._audio:

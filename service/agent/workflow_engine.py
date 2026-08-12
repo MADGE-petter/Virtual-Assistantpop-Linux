@@ -4,12 +4,17 @@ Có retry, dependency resolution, fallback, và tự sửa lỗi
 """
 
 import time
-import threading
 from typing import Optional
 from service.agent import (
     Plan, PlanStep, ToolResult, WorkflowResult,
     AgentRegistry, AgentStatus
 )
+from utils.thread_manager import get_thread_manager
+
+
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class WorkflowEngine:
@@ -122,7 +127,7 @@ class WorkflowEngine:
     
     def _execute_step(self, step: PlanStep) -> ToolResult:
         """Thực thi 1 bước"""
-        print(f"[Workflow] Step {step.step_id}: {step.tool}({step.args})")
+        logger.debug(f"[Workflow] Step {step.step_id}: {step.tool}({step.args})")
         
         # Tool đặc biệt: speak, ask_user
         if step.tool == "speak":
@@ -138,7 +143,7 @@ class WorkflowEngine:
     def _retry_step(self, step: PlanStep) -> Optional[ToolResult]:
         """Retry 1 bước với delay"""
         for attempt in range(self.max_retries):
-            print(f"[Workflow] Retry {attempt + 1}/{self.max_retries} for step {step.step_id}")
+            logger.debug(f"[Workflow] Retry {attempt + 1}/{self.max_retries} for step {step.step_id}")
             time.sleep(self.retry_delay)
             result = self._execute_step(step)
             if result.success:
@@ -150,7 +155,7 @@ class WorkflowEngine:
         if not self.planner:
             return None
         
-        print(f"[Workflow] Replanning after step {failed_step.step_id} failed: {error}")
+        logger.info(f"[Workflow] Replanning after step {failed_step.step_id} failed: {error}")
         
         try:
             new_plan = self.planner.replan_on_failure(
@@ -165,7 +170,7 @@ class WorkflowEngine:
             
             return None
         except Exception as e:
-            print(f"[Workflow] Replan failed: {e}")
+            logger.error(f"[Workflow] Replan failed: {e}")
             return None
     
     def _handle_speak(self, step: PlanStep) -> ToolResult:
@@ -174,7 +179,7 @@ class WorkflowEngine:
         if self.audio:
             self.audio.speak(text)
         else:
-            print(f"[Speak] {text}")
+            logger.info(f"[Speak] {text}")
         return ToolResult(success=True, data={"spoken": text})
     
     def _handle_ask_user(self, step: PlanStep) -> ToolResult:
@@ -238,9 +243,11 @@ class WorkflowEngine:
             if callback:
                 callback(result)
         
-        thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
-        return thread
+        thread_mgr = get_thread_manager("WorkflowEngine")
+        return thread_mgr.start_thread(
+            _run,
+            name="Workflow-Execute"
+        )
     
     def get_step_result(self, step_id: int) -> Optional[ToolResult]:
         return self._results.get(step_id)

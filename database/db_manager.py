@@ -9,6 +9,9 @@ from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from utils.paths import get_database_path
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class DatabaseManager:
@@ -65,7 +68,7 @@ class DatabaseManager:
                 cursor.execute(query, params)
                 return cursor.fetchone() if fetch_one else cursor.fetchall()
         except Exception as e:
-            print(f"[DatabaseManager] Query error: {e}")
+            logger.error(f"[DatabaseManager] Query error: {e}")
             return None
     
     def execute_update(self, query: str, params: Tuple = ()) -> int:
@@ -85,7 +88,7 @@ class DatabaseManager:
                 conn.commit()
                 return cursor.rowcount
         except Exception as e:
-            print(f"[DatabaseManager] Update error: {e}")
+            logger.error(f"[DatabaseManager] Update error: {e}")
             return -1
     
     def get_count(self, table: str, where: str = "", params: Tuple = ()) -> int:

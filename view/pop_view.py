@@ -11,7 +11,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QMouseEvent, QCursor
 
+from utils.logger import get_logger
 from view.styles.theme import COLORS, RADIUS, SHADOWS, LAYOUT, MOTION, get_app_stylesheet
+from view.components.sidebar import Sidebar
+
+logger = get_logger(__name__)
 
 
 class PopView(QWidget):
@@ -123,11 +127,9 @@ class PopView(QWidget):
         self.content_h_layout.setContentsMargins(0, 0, 0, 0)
         self.content_h_layout.setSpacing(0)
 
-        # 2.1. Sidebar Slot
-        self.sidebar_slot = QWidget(self.content_region)
-        self.sidebar_slot.setObjectName("sidebarSlot")
-        self.sidebar_slot.setFixedWidth(76) # Default collapsed width
-        self.content_h_layout.addWidget(self.sidebar_slot)
+        # 2.1. Sidebar Component (replaces sidebar_slot)
+        self.sidebar = Sidebar(self.content_region)
+        self.content_h_layout.addWidget(self.sidebar)
 
         # 2.2. Main Workspace Area (Header + Main Content)
         self.main_workspace_area = QWidget(self.content_region)
@@ -139,7 +141,7 @@ class PopView(QWidget):
         # 2.2.1. Header Slot
         self.header_slot = QWidget(self.main_workspace_area)
         self.header_slot.setObjectName("headerSlot")
-        self.header_slot.setFixedHeight(56) # Defined in LayoutTokens
+        self.header_slot.setFixedHeight(LAYOUT.HEADER_HEIGHT)
         self.main_workspace_v_layout.addWidget(self.header_slot)
 
         # 2.2.2. Main Workspace Slot
@@ -210,12 +212,12 @@ class PopView(QWidget):
 
     def update_bot_text(self, text: str):
         """Update bot text in the UI (placeholder for now)."""
-        print(f"[Bot] {text}")
+        logger.debug("[Bot] %s", text)
         # TODO: Implement actual UI update when chat area is built
 
     def update_user_text(self, text: str):
         """Update user text in the UI (placeholder for now)."""
-        print(f"[User] {text}")
+        logger.debug("[User] %s", text)
         # TODO: Implement actual UI update when chat area is built
 
     def showEvent(self, event):

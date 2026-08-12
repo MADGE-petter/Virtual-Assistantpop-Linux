@@ -9,6 +9,9 @@ import time
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 # === WORKING MEMORY (phiên hiện tại) ===
@@ -70,18 +73,16 @@ class ShortTermMemory:
             return []
         try:
             return self._sql.get_recent_conversations(limit)
-        except:
+        except Exception as e:
+            logger.error(f"[MemoryAgent] Error getting recent conversations: {e}")
             return []
     
     def save_exchange(self, user_text: str, bot_text: str, intent: str, session_id: str):
         if self._sql:
             try:
                 self._sql.save_conversation(user_text, bot_text, intent, session_id)
-            except:
-                pass
-
-
-# === LONG-TERM MEMORY (Vector + Workflow Store) ===
+            except Exception as e:
+                logger.error(f"[MemoryAgent] Error saving exchange: {e}")
 
 class LongTermMemory:
     """
@@ -107,19 +108,18 @@ class LongTermMemory:
             try:
                 with open(path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
-                pass
-        return {} if 'workflow' in path.name or 'preferences' in path.name else []
+            except Exception as e:
+                logger.error(f"[MemoryAgent] Error loading JSON from {path}: {e}")
+        return {} if path.suffix == '.json' else []
     
-    def _save_json(self, path: Path, data):
+    def _save_json(self, path: Path, data: dict | list):
         try:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[MemoryAgent] Error saving JSON to {path}: {e}")
     
     # === WORKFLOW STORE ===
-    
     def save_workflow(self, name: str, plan: dict):
         """Lưu workflow để tái sử dụng"""
         self._workflows[name] = {

@@ -1,9 +1,12 @@
 """Voice session service - quản lý trạng thái thoại, sleep và idle."""
-import threading
 import time
 from typing import Callable, Optional
 
 from controller.interfaces import IAudioService
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class VoiceSessionService:
@@ -19,6 +22,8 @@ class VoiceSessionService:
 
         self.on_wake_up = None
         self.on_go_sleep = None
+        
+        self._thread_mgr = get_thread_manager("VoiceSessionService")
 
     def init_wake_detector(self, wake_detector):
         """Inject wake detector after creation."""
@@ -55,7 +60,7 @@ class VoiceSessionService:
 
     def go_to_sleep(self, manual: bool = False, speak_callback: Optional[Callable] = None):
         """Transition assistant to sleep mode."""
-        print(f"[VoiceSessionService] Going to sleep (manual={manual})")
+        logger.info(f"[VoiceSessionService] Going to sleep (manual={manual})")
         self.is_sleeping = True
         self.is_waiting_for_wake = True
         self.awaiting_user_response = False
@@ -84,12 +89,15 @@ class VoiceSessionService:
                 if not self.is_sleeping and not self.is_waiting_for_wake:
                     idle_time = time.time() - self.last_interaction_time
                     if idle_time > self.idle_timeout_seconds:
-                        print(f"[VoiceSessionService] Idle timeout ({idle_time:.0f}s)")
+                        logger.info(f"[VoiceSessionService] Idle timeout ({idle_time:.0f}s)")
                         if on_idle_timeout:
                             on_idle_timeout()
                         break
 
-        threading.Thread(target=check_idle, daemon=True).start()
+        self._thread_mgr.start_thread(
+            check_idle,
+            name="Idle-Monitor"
+        )
 
     def get_voice_input(self):
         """Get voice input from user."""

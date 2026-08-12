@@ -4,6 +4,9 @@ Alert Notifier - Xử lý thông báo cảnh báo
 
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Callable, Dict, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from .types import Alert
@@ -33,7 +36,7 @@ class AlertNotifier:
             
             self.audio_service.speak(prefix + alert.message)
         except Exception as e:
-            print(f"[AlertNotifier] Error speaking alert: {e}")
+            logger.error(f"[AlertNotifier] Error speaking alert: {e}")
     
     def speak_recovery(self, metric: str, message: str):
         """Thông báo khi hệ thống phục hồi"""
@@ -48,8 +51,8 @@ class AlertNotifier:
         if self.audio_service:
             try:
                 self.audio_service.speak(f"✓ {message}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[AlertNotifier] speak error: {e}")
     
     def show_ui(self, alert: 'Alert'):
         """Hiển thị cảnh báo lên UI"""
@@ -67,7 +70,7 @@ class AlertNotifier:
                 }
                 self.ui_callback(alert_data)
             except Exception as e:
-                print(f"[AlertNotifier] Error calling UI callback: {e}")
+                logger.error(f"[AlertNotifier] Error calling UI callback: {e}")
     
     def notify(self, alert: 'Alert'):
         """Thông báo đầy đủ (voice + UI)"""

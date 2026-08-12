@@ -8,6 +8,10 @@ import subprocess
 # Cache volume interface để tránh tạo COM object nhiều lần
 _volume_interface_cache = None
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 def _get_volume_interface():
     global _volume_interface_cache
     if _volume_interface_cache is not None:
@@ -28,7 +32,7 @@ def _get_volume_interface():
         _volume_interface_cache = cast(interface, POINTER(IAudioEndpointVolume))
         return _volume_interface_cache
     except Exception as e:
-        print(f"[ERROR] Failed to get volume interface: {e}")
+        logger.error(f"[ERROR] Failed to get volume interface: {e}")
         raise
 
 
@@ -38,7 +42,7 @@ def get_system_volume():
         level = int(volume.GetMasterVolumeLevelScalar() * 100)
         return f"Âm lượng hiện tại {level}%"
     except Exception as e:
-        print(f"[ERROR] get_system_volume failed: {e}")
+        logger.error(f"[ERROR] get_system_volume failed: {e}")
         return "Không đọc được âm lượng"
 
 
@@ -51,7 +55,7 @@ def set_system_volume(value):
 
         return f"Đã đặt âm lượng {value}%"
     except Exception as e:
-        print(f"[ERROR] set_system_volume failed: {e}")
+        logger.error(f"[ERROR] set_system_volume failed: {e}")
         return f"Lỗi âm lượng: {e}"
 
 
@@ -66,6 +70,7 @@ def volume_up(step=10):
 
         return "Đã tăng âm lượng"
     except Exception as e:
+        logger.error(f"[ERROR] volume_up failed: {e}")
         return f"Lỗi: {e}"
 
 
@@ -80,6 +85,7 @@ def volume_down(step=10):
 
         return "Đã giảm âm lượng"
     except Exception as e:
+        logger.error(f"[ERROR] volume_down failed: {e}")
         return f"Lỗi: {e}"
 
 
@@ -149,8 +155,8 @@ def get_cpu_temperature():
     """Lấy nhiệt độ CPU - thử nhiều phương pháp"""
     methods_tried = []
     
+    # 1. Thử service lấy cảm biến nhiệt độ psutil
     try:
-        # 1. Thử service lấy cảm biến nhiệt độ psutil
         temps = _get_temperature_readings()
         if temps:
             for entry in temps:
@@ -162,8 +168,8 @@ def get_cpu_temperature():
     except Exception as e:
         methods_tried.append(f"psutil: {e}")
     
+    # 2. Thử WMI trên Windows - phương pháp phổ biến nhất
     try:
-        # 2. Thử WMI trên Windows - phương pháp phổ biến nhất
         import wmi
         w = wmi.WMI(namespace="root\\wmi")
         temperature_info = w.MSAcpi_ThermalZoneTemperature()
@@ -176,8 +182,8 @@ def get_cpu_temperature():
     except Exception as e:
         methods_tried.append(f"WMI: {e}")
     
+    # 3. Thử WMI qua Win32_PerfFormattedData (một số máy có)
     try:
-        # 3. Thử WMI qua Win32_PerfFormattedData (một số máy có)
         import wmi
         w = wmi.WMI()
         # Thử đọc từ WMI khác
@@ -187,14 +193,15 @@ def get_cpu_temperature():
                 for temp in temps:
                     if temp.CurrentReading:
                         return f"Nhiệt độ: {temp.CurrentReading}°C (TemperatureProbe)"
-        except:
-            pass
-        methods_tried.append("WMI TemperatureProbe: No data")
-    except:
+        except Exception as e:
+            logger.error(f"[Temperature] WMI TemperatureProbe failed: {e}")
+            methods_tried.append("WMI TemperatureProbe: No data")
+    except Exception as e:
+        logger.error(f"[Temperature] WMI Win32 failed: {e}")
         methods_tried.append("WMI Win32: failed")
     
+    # 4. Thử đọc từ LibreHardwareMonitor (LHM)
     try:
-        # 4. Thử đọc từ LibreHardwareMonitor (LHM)
         import wmi
         try:
             w = wmi.WMI(namespace="root\\LibreHardwareMonitor")
@@ -202,14 +209,14 @@ def get_cpu_temperature():
             for sensor in sensors:
                 if "Temperature" in str(sensor.SensorType) and "CPU" in str(sensor.Name):
                     return f"Nhiệt độ {sensor.Name}: {sensor.Value:.1f}°C (LHM)"
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[Temperature] LHM failed: {e}")
         methods_tried.append("LibreHardwareMonitor: Not running")
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"[Temperature] LHM namespace failed: {e}")
     
+    # 5. Thử đọc từ OpenHardwareMonitor (OHM) - namespace khác
     try:
-        # 5. Thử đọc từ OpenHardwareMonitor (OHM) - namespace khác
         import wmi
         try:
             w = wmi.WMI(namespace="root\\OpenHardwareMonitor")
@@ -217,22 +224,16 @@ def get_cpu_temperature():
             for sensor in sensors:
                 if "Temperature" in str(sensor.SensorType) and "CPU" in str(sensor.Name):
                     return f"Nhiệt độ {sensor.Name}: {sensor.Value:.1f}°C (OHM)"
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[Temperature] OHM failed: {e}")
         methods_tried.append("OpenHardwareMonitor: Not running")
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"[Temperature] OHM namespace failed: {e}")
     
-    # Không đọc được
-    return f"Không đọc được nhiệt độ. Đã thử: {', '.join(methods_tried)}. Hãy cài LibreHardwareMonitor và chạy nó."
+    logger.warning(f"[Temperature] All methods failed: {methods_tried}")
+    return "Không đọc được nhiệt độ CPU"
 
 
-def get_temperature_alert():
-    return _get_temperature_alert()
-
-
-# ===============================
-# ĐỘ SÁNG
 # ===============================
 
 def get_brightness():
@@ -302,7 +303,8 @@ def wifi_on():
             capture_output=True
         )
         return "WiFi đã bật"
-    except:
+    except Exception as e:
+        logger.error(f"[SystemUtils] Error enabling WiFi: {e}")
         return "Không bật được WiFi"
 
 
@@ -313,7 +315,8 @@ def wifi_off():
             capture_output=True
         )
         return "WiFi đã tắt"
-    except:
+    except Exception as e:
+        logger.error(f"[SystemUtils] Error disabling WiFi: {e}")
         return "Không tắt được WiFi"
 
 
@@ -345,19 +348,19 @@ if __name__ == "__main__":
     import comtypes
     comtypes.CoInitialize()
 
-    print("---- TEST SYSTEM ----")
+    logger.info("---- TEST SYSTEM ----")
 
-    print(get_cpu_usage())
-    print(get_ram_usage())
-    print(get_disk_usage())
+    logger.info(get_cpu_usage())
+    logger.info(get_ram_usage())
+    logger.info(get_disk_usage())
 
-    print(get_battery())
-    print(get_system_volume())
-    print(get_brightness())
+    logger.info(get_battery())
+    logger.info(get_system_volume())
+    logger.info(get_brightness())
     
-    print("\n---- TEMPERATURE ----")
-    print(get_cpu_temperature())
+    logger.info("\n---- TEMPERATURE ----")
+    logger.info(get_cpu_temperature())
     level, msg = get_temperature_alert()
-    print(f"Alert: {level} - {msg}")
+    logger.info(f"Alert: {level} - {msg}")
 
     comtypes.CoUninitialize()

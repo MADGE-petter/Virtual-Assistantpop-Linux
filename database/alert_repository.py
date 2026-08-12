@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from database.base_repository import BaseRepository
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AlertRepository(BaseRepository):
@@ -34,7 +37,7 @@ class AlertRepository(BaseRepository):
                 """)
                 conn.commit()
         except Exception as e:
-            print(f"[AlertRepository] Error initializing tables: {e}")
+            logger.error(f"[AlertRepository] Error initializing tables: {e}")
     
     def save_alert(self, alert_id: str, metric: str, level: str, value: float, 
                    message: str, timestamp: float, acknowledged: bool = False) -> bool:
@@ -50,7 +53,7 @@ class AlertRepository(BaseRepository):
                 conn.commit()
                 return True
         except Exception as e:
-            print(f"[AlertRepository] Error saving alert: {e}")
+            logger.error(f"[AlertRepository] Error saving alert: {e}")
             return False
     
     def load_alerts(self, limit: int = 100) -> List[Dict]:
@@ -78,7 +81,7 @@ class AlertRepository(BaseRepository):
                     })
                 return alerts
         except Exception as e:
-            print(f"[AlertRepository] Error loading alerts: {e}")
+            logger.error(f"[AlertRepository] Error loading alerts: {e}")
             return []
     
     def acknowledge_alert(self, alert_id: str) -> bool:
@@ -94,7 +97,7 @@ class AlertRepository(BaseRepository):
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception as e:
-            print(f"[AlertRepository] Error acknowledging alert: {e}")
+            logger.error(f"[AlertRepository] Error acknowledging alert: {e}")
             return False
     
     def delete_all_alerts(self) -> bool:
@@ -107,7 +110,7 @@ class AlertRepository(BaseRepository):
                 conn.commit()
                 return True
         except Exception as e:
-            print(f"[AlertRepository] Error deleting alerts: {e}")
+            logger.error(f"[AlertRepository] Error deleting alerts: {e}")
             return False
     
     def cleanup_old_alerts(self, days_to_keep: int = 30, max_rows: int = 5000) -> Dict:
@@ -148,7 +151,7 @@ class AlertRepository(BaseRepository):
                 conn.commit()
                 return result
         except Exception as e:
-            print(f"[AlertRepository] Error cleaning up alerts: {e}")
+            logger.error(f"[AlertRepository] Error cleaning up alerts: {e}")
             return result
     
     def get_alert_count(self) -> int:
@@ -159,5 +162,5 @@ class AlertRepository(BaseRepository):
                 cursor.execute("SELECT COUNT(*) FROM alert_logs")
                 return cursor.fetchone()[0]
         except Exception as e:
-            print(f"[AlertRepository] Error getting count: {e}")
+            logger.error(f"[AlertRepository] Error getting count: {e}")
             return 0

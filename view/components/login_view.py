@@ -10,6 +10,9 @@ from PyQt6.QtWidgets import (
     QPushButton, QApplication, QWidget
 )
 from PyQt6.QtGui import QPixmap
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from view.components.login_styles import get_login_dialog_qss
 from view.components.login_dialogs import RegisterDialog, ToastLabel
@@ -166,7 +169,7 @@ def main():
             }
         
         def save_settings(self, settings):
-            print("Settings saved:", settings)
+            logger.info("Settings saved: %s", settings)
         
         def authenticate_user(self, username, password):
             return username == "admin" and password == "123456"
@@ -175,11 +178,11 @@ def main():
             return username == "admin"
         
         def save_new_user(self, username, password):
-            print(f"New user: {username}")
+            logger.info("New user: %s", username)
             return True
     
     login_view = LoginView(MockLoginService())
-    login_view.login_success.connect(lambda u: print(f"Login success: {u}"))
+    login_view.login_success.connect(lambda u: logger.info(f"Login success: {u}"))
     login_view.show()
     
     sys.exit(app.exec())

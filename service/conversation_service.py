@@ -3,6 +3,9 @@ from typing import Any, Callable, Dict, Optional
 
 from controller.interfaces import IActionHandler, IAudioService, IUserController
 from service.intern.text_utils import extract_location
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ActionResult:
@@ -36,7 +39,7 @@ class ConversationContext:
             if key not in self.slot_history:
                 self.slot_history[key] = []
             self.slot_history[key].append(self.slots[key])
-            print(f"[Context] Slot '{key}' changed: '{self.slots[key]}' → '{value}'")
+            logger.debug(f"[Context] Slot '{key}' changed: '{self.slots[key]}' → '{value}'")
         self.slots[key] = value
         return overwritten
     
@@ -126,7 +129,7 @@ class ConversationService:
             
             if context.pending_intent and intent != context.pending_intent:
                 # User changed their mind - clear old context
-                print(f"[Context] User changed from '{context.pending_intent}' to '{intent}' - clearing pending")
+                logger.debug(f"[Context] User changed from '{context.pending_intent}' to '{intent}' - clearing pending")
                 context.clear_pending()
             
             # 3. Check for name update (both 'update_name' and 'name' intents)
@@ -182,7 +185,7 @@ class ConversationService:
                 self._memory_service.save_exchange(user_name, user_input, result_text, session_id_int)
             except Exception as e:
                 # Log error but don't fail the conversation
-                print(f"[Warning] Failed to save exchange: {e}")
+                logger.warning(f"[Warning] Failed to save exchange: {e}")
         
         return result_text or ""
     

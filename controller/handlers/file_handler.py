@@ -6,22 +6,21 @@ import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from controller.handlers.base_handler import BaseHandler
+from utils.logger import get_logger
 
-class FileHandler:
+logger = get_logger(__name__)
+
+
+class FileHandler(BaseHandler):
     """Handler for opening files from Downloads and other directories."""
     
     def __init__(self, audio_service=None, view=None):
-        self.audio_service = audio_service
-        self.view = view
+        super().__init__(audio_service, view)
     
-    def set_audio_service(self, audio_service):
-        self.audio_service = audio_service
-        
-    def set_view(self, view):
-        self.view = view
-        
-    def set_user_name(self, name):
-        pass
+    def handle(self, text):
+        """Main handler entry point - routes to handle_open_file."""
+        return self.handle_open_file(text)
     
     def _get_downloads_path(self):
         """Lấy đường dẫn thư mục Downloads."""
@@ -43,7 +42,7 @@ class FileHandler:
                     if mod_time > cutoff_time:
                         recent_files.append((filename, filepath, mod_time))
         except Exception as e:
-            print(f"Error listing directory: {e}")
+            logger.error(f"Error listing directory: {e}")
             return []
         
         recent_files.sort(key=lambda x: x[2], reverse=True)
@@ -69,7 +68,7 @@ class FileHandler:
                             best_score = score
                             best_match = filepath
         except Exception as e:
-            print(f"Error searching file: {e}")
+            logger.error(f"Error searching file: {e}")
             
         return best_match
     

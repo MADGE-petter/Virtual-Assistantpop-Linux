@@ -5,6 +5,9 @@ import platform
 import subprocess
 import glob
 from pathlib import Path
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AppScanner:
@@ -53,7 +56,7 @@ class AppScanner:
                         if item_lower not in self.app_cache:
                             self.app_cache[item_lower] = dir_path
             except Exception as e:
-                print(f"[AppScanner] Lỗi quét Start Menu {start_dir}: {e}")
+                logger.error(f"[AppScanner] Lỗi quét Start Menu {start_dir}: {e}")
     
     # Các file .exe không nên dùng làm entry point
     _IGNORED_EXE_NAMES = {
@@ -145,7 +148,7 @@ class AppScanner:
                             if app_name not in self.app_cache:
                                 self.app_cache[app_name] = best_exe
             except Exception as e:
-                print(f"[AppScanner] Lỗi quét {program_dir}: {e}")
+                logger.error(f"[AppScanner] Lỗi quét {program_dir}: {e}")
     
     def _scan_registry_uninstall(self):
         """Quét Windows Registry để tìm ứng dụng đã cài đặt."""
@@ -169,8 +172,8 @@ class AppScanner:
                                 install_location = ""
                                 try:
                                     install_location = winreg.QueryValueEx(subkey, "InstallLocation")[0]
-                                except:
-                                    pass
+                                except Exception as e:
+                                    logger.error(f"[AppScanner] InstallLocation error: {e}")
                                 
                                 app_name_lower = display_name.lower().strip()
                                 # Tìm file .exe trong thư mục cài đặt
@@ -183,19 +186,19 @@ class AppScanner:
                                 # Lưu tên app để fallback tìm sau
                                 if app_name_lower not in self.app_cache:
                                     self.app_cache[app_name_lower] = None  # Đánh dấu đã biết app này
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.error(f"[AppScanner] subkey error: {e}")
                             finally:
                                 winreg.CloseKey(subkey)
-                        except:
-                            pass
+                        except Exception as e:
+                            logger.error(f"[AppScanner] EnumKey error: {e}")
                     winreg.CloseKey(key)
                 except Exception as e:
-                    print(f"[AppScanner] Lỗi registry {reg_path}: {e}")
+                    logger.error(f"[AppScanner] Lỗi registry {reg_path}: {e}")
         except ImportError:
-            print("[AppScanner] Không import được winreg")
+            logger.warning("[AppScanner] Không import được winreg")
         except Exception as e:
-            print(f"[AppScanner] Lỗi quét registry: {e}")
+            logger.error(f"[AppScanner] Lỗi quét registry: {e}")
     
     def _scan_common_apps(self):
         """Quét các ứng dụng phổ biến với đường dẫn cụ thể."""
@@ -291,8 +294,8 @@ class AppScanner:
                         if item.endswith('.app'):
                             app_name = item.replace('.app', '').lower()
                             self.app_cache[app_name] = os.path.join(app_dir, item)
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"[AppScanner] _scan_mac_apps error: {e}")
     
     def _scan_linux_apps(self):
         """Quét ứng dụng trên Linux."""
@@ -304,8 +307,8 @@ class AppScanner:
                         if item.endswith('.desktop'):
                             app_name = item.replace('.desktop', '').lower()
                             self.app_cache[app_name] = os.path.join(app_dir, item)
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"[AppScanner] _scan_linux_apps error: {e}")
     
     def _try_find_with_where(self, app_name):
         """Dùng lệnh 'where' của Windows để tìm ứng dụng."""
@@ -321,8 +324,8 @@ class AppScanner:
                     p = p.strip()
                     if p.lower().endswith('.exe') and os.path.exists(p):
                         return p
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[AppScanner] _try_find_with_where error: {e}")
         return None
     
     def _try_find_by_wildcard_exe(self, app_name):
@@ -342,8 +345,8 @@ class AppScanner:
                 matches = glob.glob(pattern, recursive=True)
                 if matches:
                     return matches[0]
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[AppScanner] _try_find_by_wildcard_exe error: {e}")
         return None
     
     def find_app(self, app_name):
@@ -453,4 +456,4 @@ class AppScanner:
         """Làm mới cache - quét lại tất cả nguồn."""
         self.app_cache = {}
         self._scan_all_sources()
-        print(f"[AppScanner] Cache refreshed: {len(self.app_cache)} apps found")
+        logger.info(f"[AppScanner] Cache refreshed: {len(self.app_cache)} apps found")

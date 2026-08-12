@@ -1,14 +1,18 @@
 """Analytics Service - Background service for collecting analytics data"""
 
 import re
-import threading
 import time
+import threading
 from datetime import datetime
 from typing import Optional
 
 import psutil
 
 from model.usage_tracker import get_tracker
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AnalyticsService:
@@ -20,6 +24,7 @@ class AnalyticsService:
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._snapshot_interval = 300  # 5 phút
+        self._thread_mgr = get_thread_manager("AnalyticsService")
     
     def start(self):
         """Bắt đầu thu thập dữ liệu"""
@@ -28,8 +33,10 @@ class AnalyticsService:
         
         self._running = True
         self.tracker.start_session(self.user_name)
-        self._thread = threading.Thread(target=self._collect_loop, daemon=True)
-        self._thread.start()
+        self._thread = self._thread_mgr.start_thread(
+            self._collect_loop,
+            name="Analytics-Collector"
+        )
     
     def stop(self):
         """Dừng thu thập dữ liệu"""
@@ -45,7 +52,8 @@ class AnalyticsService:
                 # Thu thập health snapshot
                 self._collect_health_snapshot()
                 time.sleep(self._snapshot_interval)
-            except Exception:
+            except Exception as e:
+                logger.error(f"[AnalyticsService] _collect_loop error: {e}")
                 time.sleep(60)
     
     def _collect_health_snapshot(self):
@@ -71,8 +79,8 @@ class AnalyticsService:
                 match = re.search(r'(\d+\.?\d*)°C', result)
                 if match:
                     temp = float(match.group(1))
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[AnalyticsService] temperature error: {e}")
             
             # Lưu snapshot
             self.tracker.log_health_snapshot(
@@ -82,8 +90,8 @@ class AnalyticsService:
                 temp=temp,
                 user_name=self.user_name
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[AnalyticsService] _collect_health_snapshot error: {e}")
     
     def log_app_opened(self, app_name: str):
         """Log ứng dụng được mở"""
@@ -100,8 +108,8 @@ class AnalyticsService:
         if self._running:
             try:
                 self.tracker.end_session(self.user_name)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[AnalyticsService] end_session error: {e}")
             self.user_name = user_name
             self.tracker.start_session(self.user_name)
         else:

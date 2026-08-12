@@ -13,6 +13,9 @@ Flow:
 
 import threading
 import time
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 from service.agent import AgentRegistry, Plan
 from service.agent.planner import PlannerAgent
 from service.agent.workflow_engine import WorkflowEngine
@@ -127,12 +130,12 @@ class AgentLoop:
         if not user_text or user_text == "...":
             return ""
         
-        print(f"\n[AgentLoop] Processing: {user_text}")
+        logger.debug(f"\n[AgentLoop] Processing: {user_text}")
         
         # === STEP 1: Kiểm tra workflow đã lưu ===
         saved_wf = self.memory.find_saved_workflow(user_text)
         if saved_wf:
-            print(f"[AgentLoop] Found saved workflow: {saved_wf['name']}")
+            logger.debug(f"[AgentLoop] Found saved workflow: {saved_wf['name']}")
             plan = Plan(
                 goal=saved_wf["plan"].get("goal", ""),
                 steps=[],  # Sẽ parse từ saved plan
@@ -156,9 +159,9 @@ class AgentLoop:
         if self.on_plan:
             self.on_plan(plan)
         
-        print(f"[AgentLoop] Plan: {plan.goal} ({len(plan.steps)} steps)")
+        logger.debug(f"[AgentLoop] Plan: {plan.goal} ({len(plan.steps)} steps)")
         for s in plan.steps:
-            print(f"  Step {s.step_id}: {s.tool}({s.args})")
+            logger.debug(f" Step {s.step_id}: {s.tool}({s.args})")
         
         # === STEP 3: Workflow Engine thực thi ===
         result = self.engine.execute(plan)
@@ -188,7 +191,7 @@ class AgentLoop:
                 ],
                 "final_response_template": plan.final_response_template
             })
-            print(f"[AgentLoop] Saved workflow: {wf_name}")
+            logger.info(f"[AgentLoop] Saved workflow: {wf_name}")
         
         if self.on_done:
             self.on_done(result)
@@ -224,8 +227,7 @@ class AgentLoop:
             try:
                 self.run_once()
             except Exception as e:
-                print(f"[AgentLoop] Error: {e}")
-                time.sleep(1)
+                logger.error(f"[AgentLoop] Error: {e}")
     
     def stop(self):
         self._active = False

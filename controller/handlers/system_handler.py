@@ -15,6 +15,9 @@ from service.system_monitoring_service import (
     get_top_cpu_processes,
     get_top_ram_processes,
 )
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SystemHandler(BaseHandler):
@@ -58,7 +61,7 @@ class SystemHandler(BaseHandler):
                         text_lower, text, set_system_volume, get_system_volume, "âm lượng"
                     )
                 except Exception as e:
-                    print(f"[ERROR] Volume control failed: {e}")
+                    logger.error(f"[SystemHandler] Volume control failed: {e}")
                     return "Xin lỗi, không thể điều chỉnh âm lượng lúc này."
             
             if any(k in text_lower for k in ["độ sáng", "tăng sáng", "giảm sáng", "sáng hơn", "tối hơn"]):
@@ -136,14 +139,16 @@ class SystemHandler(BaseHandler):
             try:
                 current_num = self._extract_number(getter(), 50)
                 return setter(min(100, current_num + 20))
-            except:
+            except Exception as e:
+                logger.error(f"[SystemHandler] Error getting current brightness: {e}")
                 return setter(80)
         
         if "giảm sáng" in text_lower or "tối hơn" in text_lower:
             try:
                 current_num = self._extract_number(getter(), 50)
                 return setter(max(0, current_num - 20))
-            except:
+            except Exception as e:
+                logger.error(f"[SystemHandler] Error getting current brightness: {e}")
                 return setter(30)
         
         return self._handle_numeric_control(text_lower, text, setter, getter, "độ sáng")
@@ -175,7 +180,7 @@ class SystemHandler(BaseHandler):
                 message = "Xin lỗi, tôi không đọc được nhiệt độ máy. Để đọc được nhiệt độ, bạn cần cài đặt OpenHardwareMonitor trong thư mục tools của bot."
                 return self.speak_and_return(message, wait=6)
         except Exception as e:
-            print(f"[ERROR] Temperature check failed: {e}")
+            logger.error(f"[SystemHandler] Temperature check failed: {e}")
             return self.speak_and_return("Xin lỗi, tôi không đọc được nhiệt độ máy lúc này.", wait=3)
     
     def _get_full_system_status(self):
@@ -193,17 +198,17 @@ class SystemHandler(BaseHandler):
             max_temp = 0
             try:
                 temp_result = get_cpu_temperature_auto()
-                print(f"[DEBUG] Temperature raw result: {temp_result}")
+                logger.debug(f"[SystemHandler] Temperature raw result: {temp_result}")
                 # Parse nhiệt độ từ kết quả
                 match = re.search(r'(\d+\.?\d*)°C', temp_result)
                 if match:
                     max_temp = float(match.group(1))
                     temp_msg = f". Nhiệt độ {max_temp:.0f}°C"
-                    print(f"[DEBUG] Parsed temperature: {max_temp}°C")
+                    logger.debug(f"[SystemHandler] Parsed temperature: {max_temp}°C")
                 else:
-                    print(f"[DEBUG] No temperature match in: {temp_result}")
+                    logger.debug(f"[SystemHandler] No temperature match in: {temp_result}")
             except Exception as e:
-                print(f"[DEBUG] Temperature error: {e}")
+                logger.debug(f"[SystemHandler] Temperature error: {e}")
             
             # Build message
             msg = f"CPU {cpu:.0f}%, RAM {ram_percent:.0f}%"

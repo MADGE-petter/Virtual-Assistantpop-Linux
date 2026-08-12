@@ -1,6 +1,10 @@
 import os
 import sys
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def resource_path(*parts: str) -> str:
     """Return an absolute path to a resource bundled with the app.
@@ -50,9 +54,9 @@ def get_database_path(filename: str = "conversations.db") -> str:
                 try:
                     os.makedirs(os.path.dirname(write_path), exist_ok=True)
                     shutil.copy2(bundle_path, write_path)
-                    print(f"[Paths] Copied default database template to {write_path}")
+                    logger.info("[Paths] Copied default database template to %s", write_path)
                 except Exception as e:
-                    print(f"[Paths] Error copying database template: {e}")
+                    logger.error("[Paths] Error copying database template: %s", e)
                     
     return write_path
 

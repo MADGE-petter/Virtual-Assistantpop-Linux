@@ -13,6 +13,9 @@ os.environ['GTK_IM_MODULE'] = 'fcitx'
 
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QApplication
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def main():
@@ -31,9 +34,9 @@ def main():
             if os.path.exists(icon_path):
                 app.setWindowIcon(QIcon(icon_path))
             else:
-                print(f"[Login] Icon not found: {icon_path}")
+                logger.warning(f"[Login] Icon not found: {icon_path}")
         except Exception as e:
-            print(f"[Login] Could not set icon: {e}")
+            logger.error(f"[Login] Could not set icon: {e}")
 
         # Import temperature_monitor để quản lý OHM lifecycle
         _monitor_ref = None
@@ -41,14 +44,14 @@ def main():
             from model.temperature_monitor import _monitor
             _monitor_ref = _monitor
         except Exception as e:
-            print(f"[Login] Không import được temperature_monitor: {e}")
+            logger.warning(f"[Login] Không import được temperature_monitor: {e}")
         
         def on_app_exit():
             try:
                 if _monitor_ref:
                     _monitor_ref.stop_ohm()
             except Exception as e:
-                print(f"[Login] Lỗi dừng OHM: {e}")
+                logger.error(f"[Login] Lỗi dừng OHM: {e}")
         app.aboutToQuit.connect(on_app_exit)
 
         from service.login_service import LoginService
@@ -61,13 +64,13 @@ def main():
         main_window = None
         
         def on_login_success(username):
-            print(f"Login successful: {username}")
+            logger.info(f"Login successful: {username}")
             # View đã show toast "Đăng nhập thành công!" rồi, không cần show thêm
             nonlocal main_window
             main_window = create_main_window(username)
             if main_window:
                 main_window.show()
-                print("Main window shown")
+                logger.info("Main window shown")
                 # Close login window
                 if login_window:
                     login_window.close()
@@ -80,10 +83,10 @@ def main():
         sys.exit(app.exec())
             
     except ImportError as e:
-        print(f"Chi tiết lỗi: {e}")
+        logger.error(f"Chi tiết lỗi: {e}")
         input("Nhấn Enter để thoát...")
     except Exception as e:
-        print(f"Lỗi khởi động ứng dụng: {e}")
+        logger.error(f"Lỗi khởi động ứng dụng: {e}")
         import traceback
         traceback.print_exc()
         input("Nhấn Enter để thoát...")

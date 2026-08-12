@@ -27,6 +27,9 @@ from service.habit import (
     HabitRecommendationService,
 )
 from service.habit.habit_normalization_service import HabitNormalizationService
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HabitTracker:
@@ -48,7 +51,7 @@ class HabitTracker:
     def _log_error(self, method_name, error, include_traceback=True):
         """Log errors consistently with context"""
         error_msg = f"[HabitTracker.{method_name}] Error: {error}"
-        print(error_msg)
+        logger.error(error_msg)
     
     # ========== BASIC HABIT TRACKING ==========
     
@@ -67,8 +70,8 @@ class HabitTracker:
             try:
                 if hasattr(self._alerts, 'update_last_activity'):
                     self._alerts.update_last_activity(maNguoiDung, normalized_name)
-            except Exception:
-                pass  # Không quan trọng nếu alert service không hỗ trợ
+            except Exception as e:
+                logger.error(f"[HabitTracker] update_last_activity error: {e}")  # Không quan trọng nếu alert service không hỗ trợ
             
             # Step 4: Learn/update habit (bao gồm burst detection)
             time_bucket = now.hour

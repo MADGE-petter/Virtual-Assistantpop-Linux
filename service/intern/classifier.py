@@ -1,6 +1,9 @@
 """Intent classification module - Phân loại ý định người dùng."""
 
 import re
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class IntentClassifier:
@@ -95,62 +98,62 @@ class IntentClassifier:
             
         text_lower = text.lower()
         if cls._check_keywords(text_lower, cls.TIME_KEYWORDS):
-            print(f"[INTERN] Detected: time | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: time | Text: '{text}'")
             return "time"
             
         if cls._check_keywords(text_lower, cls.NAME_KEYWORDS):
-            print(f"[INTERN] Detected: name | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: name | Text: '{text}'")
             return "name"
             
         if cls._check_keywords(text_lower, cls.SYSTEM_KEYWORDS):
-            print(f"[INTERN] Detected: system_control | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: system_control | Text: '{text}'")
             return "system_control"
             
         if cls._check_keywords(text_lower, cls.WEATHER_KEYWORDS):
-            print(f"[INTERN] Detected: weather | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: weather | Text: '{text}'")
             return "weather"
             
         if cls._check_keywords(text_lower, cls.GREETING_KEYWORDS):
-            print(f"[INTERN] Detected: greeting | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: greeting | Text: '{text}'")
             return "greeting"
             
         if cls._check_keywords(text_lower, cls.SEARCH_KEYWORDS):
-            print(f"[INTERN] Detected: search | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: search | Text: '{text}'")
             return "search"
             
         # FILE detection first (highest priority)
         if cls._check_keywords(text_lower, cls.FILE_KEYWORDS):
-            print(f"[INTERN] Detected: open_file | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: open_file | Text: '{text}'")
             return "open_file"
 
         # WEBSITE detection second (medium priority)
         if cls._check_keywords(text_lower, cls.WEBSITE_KEYWORDS):
-            print(f"[INTERN] Detected: open_website | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: open_website | Text: '{text}'")
             return "open_website"
 
         # APP detection last (lowest priority - fallback)
         app_match = cls._detect_open_app(text_lower)
         if app_match:
-            print(f"[INTERN] Detected: open_app | App: {app_match}")
+            logger.debug(f"[INTERN] Detected: open_app | App: {app_match}")
             return "open_app"
         
         if cls._check_keywords(text_lower, cls.HELP_KEYWORDS):
-            print(f"[INTERN] Detected: help | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: help | Text: '{text}'")
             return "help"
             
         if cls._check_keywords(text_lower, cls.GOODBYE_KEYWORDS):
-            print(f"[INTERN] Detected: goodbye | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: goodbye | Text: '{text}'")
             return "goodbye"
             
         if cls._check_keywords(text_lower, cls.SLEEP_KEYWORDS):
-            print(f"[INTERN] Detected: sleep | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: sleep | Text: '{text}'")
             return "sleep"
         
         if cls._check_keywords(text_lower, cls.HABIT_KEYWORDS):
-            print(f"[INTERN] Detected: habit_query | Text: '{text}'")
+            logger.debug(f"[INTERN] Detected: habit_query | Text: '{text}'")
             return "habit_query"
         
-        print(f"[INTERN] Unknown intent | Text: '{text}'")
+        logger.debug(f"[INTERN] Unknown intent | Text: '{text}'")
         return "unknown"
     
     @classmethod

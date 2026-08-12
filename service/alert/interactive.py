@@ -8,6 +8,9 @@ import time
 from typing import Callable, Dict, List, Optional, Union
 
 import psutil
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from service.system_monitoring_service import (
     get_top_cpu_processes,
@@ -190,6 +193,7 @@ class InteractiveAlertHandler:
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         continue
                 return closed_count > 0
-        except Exception:
+        except Exception as e:
+            logger.error(f"[InteractiveAlert] _close_process error: {e}")
             return False
         return False

@@ -33,7 +33,7 @@ class BaseHandler(ABC):
         pass
     
     def speak(self, text, wait=0):
-        
+        """Speak text using audio service."""
         if self.audio_service:
             result = self.audio_service.speak(text)
             if wait > 0:
@@ -42,5 +42,6 @@ class BaseHandler(ABC):
         return None
     
     def speak_and_return(self, text, wait=0):
+        """Speak text and return the text."""
         self.speak(text, wait)
         return text

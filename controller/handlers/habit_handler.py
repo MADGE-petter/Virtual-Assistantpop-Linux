@@ -7,11 +7,17 @@ Habit Handler - Xử lý thói quen và gợi ý cho user
 from datetime import datetime
 from typing import Dict, List
 
+from controller.handlers.base_handler import BaseHandler
+from utils.logger import get_logger
 
-class HabitHandler:
+logger = get_logger(__name__)
+
+
+class HabitHandler(BaseHandler):
     """Handler cho các query liên quan đến thói quen"""
     
     def __init__(self, user_id: int = 1):
+        # HabitHandler không cần audio_service hoặc view
         self.user_id = user_id
         self.habit_tracker = None
         self._init_tracker()
@@ -22,7 +28,7 @@ class HabitHandler:
             from controller.habit_tracker import get_habit_tracker
             self.habit_tracker = get_habit_tracker()
         except Exception as e:
-            print(f"[HabitHandler] Error init tracker: {e}")
+            logger.error(f"[HabitHandler] Error init tracker: {e}")
     
     def handle(self, text: str) -> str:
         """Xử lý câu hỏi về thói quen"""
@@ -91,4 +97,4 @@ class HabitHandler:
 # Test
 if __name__ == "__main__":
     handler = HabitHandler(1)
-    print(handler._show_habits())
+    logger.info(handler._show_habits())

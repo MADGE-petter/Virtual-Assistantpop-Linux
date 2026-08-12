@@ -6,6 +6,9 @@ Database Migration Script
 
 import os
 import sqlite3
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def migrate_database():
@@ -141,18 +144,18 @@ def migrate_database():
         """)
         
         conn.commit()
-        print("Da tao database structure moi!")
+        logger.info("Da tao database structure moi!")
         
         conn.close()
-        print("Migration hoan tat!")
+        logger.info("Migration hoan tat!")
         
     except Exception as e:
-        print(f"Loi migration: {e}")
+        logger.error(f"Loi migration: {e}")
         if os.path.exists('conversations.db'):
             os.remove('conversations.db')
         if os.path.exists('conversations_backup.db'):
             os.rename('conversations_backup.db', 'conversations.db')
-        print("Da rollback database cu")
+        logger.info("Da rollback database cu")
 
 def import_from_backup(cursor, conn):
     """Import du lieu tu database cu"""
@@ -173,7 +176,7 @@ def import_from_backup(cursor, conn):
                         VALUES (?)
                     """, (username,))
         except Exception as e:
-            print(f"Khong the import users tu backup: {e}")
+            logger.error(f"Khong the import users tu backup: {e}")
         
         # Import sessions
         backup_cursor.execute("SELECT maPhien, tenKhachHang, thoiGianBatDau, thoiGianKetThuc FROM sessions")
@@ -214,10 +217,10 @@ def import_from_backup(cursor, conn):
             """, (conv_id, session_id, user_id, user_msg, bot_msg, timestamp))
         
         backup_conn.close()
-        print("Da import du lieu thanh cong!")
+        logger.info("Da import du lieu thanh cong!")
         
     except Exception as e:
-        print(f"Loi import: {e}")
+        logger.error(f"Loi import: {e}")
 
 if __name__ == "__main__":
     migrate_database()

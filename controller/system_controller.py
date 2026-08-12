@@ -3,6 +3,9 @@
 from typing import Optional
 
 from controller.interfaces import IAlertManager, IAnalyticsService
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SystemController: 
@@ -41,8 +44,8 @@ class SystemController:
         if self._monitor_ref:
             try:
                 self._monitor_ref.stop_ohm()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[SystemController] Error stopping temperature monitor: {e}")
     
     def set_sleep_mode(self, enabled):
         """Thiết lập chế độ ngủ cho các services."""

@@ -8,6 +8,10 @@ from typing import Optional, Tuple
 import psutil
 
 from utils.paths import resource_path
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class TemperatureMonitor:
     """Quản lý việc đọc nhiệt độ từ OHM/LHM"""
 
@@ -36,19 +40,19 @@ class TemperatureMonitor:
                 name = proc.info['name'].lower()
                 if 'openhardwaremonitor' in name or 'librehardwaremonitor' in name:
                     return True
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[TemperatureMonitor] Error checking process: {e}")
         return False
     
     def start_ohm(self, admin: bool = True) -> bool:
         """Khởi động OHM với quyền admin"""
         if self.is_ohm_running():
-            print("[TemperatureMonitor] OHM/LHM đã đang chạy")
+            logger.info("[TemperatureMonitor] OHM/LHM đã đang chạy")
             return True
             
         ohm_path = self.find_ohm()
         if not ohm_path:
-            print("[TemperatureMonitor] Không tìm thấy OHM/LHM")
+            logger.warning("[TemperatureMonitor] Không tìm thấy OHM/LHM")
             return False
             
         try:
@@ -80,7 +84,7 @@ class TemperatureMonitor:
                         SW_MINIMIZE  # nShowCmd - minimize
                     )
                     if result <= 32:  # Lỗi nếu <= 32
-                        print(f"[TemperatureMonitor] Không thể khởi động OHM với admin (error: {result})")
+                        logger.warning(f"[TemperatureMonitor] Không thể khởi động OHM với admin (error: {result})")
                         # Thử chạy không admin
                         self._ohm_process = subprocess.Popen(
                             [ohm_path],
@@ -98,19 +102,19 @@ class TemperatureMonitor:
                 )
                 
             # Đợi OHM khởi động và tạo WMI namespace
-            print("[TemperatureMonitor] Đang đợi OHM khởi động...")
+            logger.info("[TemperatureMonitor] Đang đợi OHM khởi động...")
             time.sleep(20)  # Tăng lên 20s để WMI namespace kịp tạo
             
             # Kiểm tra lại
             if self.is_ohm_running():
-                print("[TemperatureMonitor] OHM đã khởi động thành công")
+                logger.info("[TemperatureMonitor] OHM đã khởi động thành công")
                 return True
             else:
-                print("[TemperatureMonitor] OHM không khởi động được")
+                logger.warning("[TemperatureMonitor] OHM không khởi động được")
                 return False
                 
         except Exception as e:
-            print(f"[TemperatureMonitor] Lỗi khởi động OHM: {e}")
+            logger.error(f"[TemperatureMonitor] Lỗi khởi động OHM: {e}")
             return False
     
     def stop_ohm(self):
@@ -120,8 +124,8 @@ class TemperatureMonitor:
             try:
                 self._ohm_process.terminate()
                 self._ohm_process.wait(timeout=3)
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[TemperatureMonitor] Error terminating OHM process: {e}")
             self._ohm_process = None
         
         # 2. Kill tất cả process OHM/LHM đang chạy (trường hợp khởi động bằng admin)
@@ -129,10 +133,10 @@ class TemperatureMonitor:
             try:
                 name = proc.info['name'].lower()
                 if 'openhardwaremonitor' in name or 'librehardwaremonitor' in name:
-                    print(f"[TemperatureMonitor] Killing process {name} (PID: {proc.info['pid']})")
+                    logger.info(f"[TemperatureMonitor] Killing process {name} (PID: {proc.info['pid']})")
                     psutil.Process(proc.info['pid']).terminate()
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[TemperatureMonitor] Error killing OHM process: {e}")
     
     def _read_wmi_admin(self) -> Optional[float]:
         """Đọc nhiệt độ qua WMI với quyền admin - thử nhiều class"""
@@ -146,11 +150,11 @@ class TemperatureMonitor:
                 for t in temps:
                     raw = t.CurrentTemperature
                     celsius = (raw / 10.0) - 273.15
-                    print(f"[WMI] MSAcpi_ThermalZone: {raw} -> {celsius:.1f}°C")
+                    logger.debug(f"[WMI] MSAcpi_ThermalZone: {raw} -> {celsius:.1f}°C")
                     if 1 <= celsius <= 105:
                         return celsius
         except Exception as e:
-            print(f"[WMI] MSAcpi error: {e}")
+            logger.error(f"[WMI] MSAcpi error: {e}")
         
         # 2. Thử Win32_TemperatureProbe
         try:
@@ -159,11 +163,11 @@ class TemperatureMonitor:
             for p in probes:
                 if hasattr(p, 'CurrentReading') and p.CurrentReading:
                     val = float(p.CurrentReading)
-                    print(f"[WMI] TemperatureProbe: {val}°C")
+                    logger.debug(f"[WMI] TemperatureProbe: {val}°C")
                     if 1 <= val <= 105:
                         return val
         except Exception as e:
-            print(f"[WMI] TemperatureProbe error: {e}")
+            logger.error(f"[WMI] TemperatureProbe error: {e}")
         
         # 3. Thử CIM_Sensor (một số máy Dell/HP có)
         try:
@@ -176,12 +180,12 @@ class TemperatureMonitor:
                         val = float(s.CurrentValue)
                         if 1 <= val <= 105:
                             temps.append(val)
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.error(f"[WMI] CIM_Sensor value error: {e}")
             if temps:
                 return max(temps)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[WMI] CIM_Sensor error: {e}")
         
         # 4. Thử Win32_PerfFormattedData_Counters_ThermalZoneInformation
         try:
@@ -190,8 +194,8 @@ class TemperatureMonitor:
             valid = [z.Temperature for z in zones if hasattr(z, 'Temperature') and z.Temperature and 1 <= z.Temperature <= 105]
             if valid:
                 return max(valid)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[WMI] ThermalZoneInformation error: {e}")
         
         return None
     
@@ -220,13 +224,13 @@ class TemperatureMonitor:
             if device_count > 0:
                 handle = nvmlDeviceGetHandleByIndex(0)  # GPU đầu tiên
                 temp = nvmlDeviceGetTemperature(handle, NVML_TEMPERATURE_GPU)
-                print(f"[NVML] GPU temperature: {temp}°C")
+                logger.debug(f"[NVML] GPU temperature: {temp}°C")
                 if 1 <= temp <= 105:
                     return float(temp)
         except ImportError:
             pass  # Cả pynvml và nvidia-ml-py đều chưa cài
         except Exception as e:
-            print(f"[NVML] Error: {e}")
+            logger.error(f"[NVML] Error: {e}")
         return None
     
     def _read_thermal_performance_counter(self) -> Optional[float]:
@@ -263,16 +267,16 @@ class TemperatureMonitor:
             try:
                 w = wmi.WMI(namespace="root\\LibreHardwareMonitor")
                 sensors = w.Sensor()
-                print(f"[TemperatureMonitor] LHM sensors found: {len(sensors)}")
+                logger.debug(f"[TemperatureMonitor] LHM sensors found: {len(sensors)}")
                 cpu_temps = []
                 for sensor in sensors:
-                    print(f"[TemperatureMonitor] LHM Sensor: {sensor.Name} - {sensor.SensorType} = {sensor.Value}")
+                    logger.debug(f"[TemperatureMonitor] LHM Sensor: {sensor.Name} - {sensor.SensorType} = {sensor.Value}")
                     if "Temperature" in str(sensor.SensorType):
                         sensor_name = str(sensor.Name).lower()
                         sensor_value = float(sensor.Value)
                         # Kiểm tra giá trị hợp lý (1-105°C, 0°C không hợp lý)
                         if not (1 <= sensor_value <= 105):
-                            print(f"[TemperatureMonitor] Bỏ qua {sensor.Name}: {sensor_value}°C (ngoài phạm vi)")
+                            logger.debug(f"[TemperatureMonitor] Bỏ qua {sensor.Name}: {sensor_value}°C (ngoài phạm vi)")
                             continue
                         # Loại trừ GPU sensors
                         if 'gpu' in sensor_name or 'nvidia' in sensor_name or 'amd' in sensor_name or 'radeon' in sensor_name:
@@ -286,26 +290,26 @@ class TemperatureMonitor:
                 if cpu_temps:
                     # Lấy nhiệt độ cao nhất
                     hottest = max(cpu_temps, key=lambda x: x[1])
-                    print(f"[TemperatureMonitor] Chọn nhiệt độ: {hottest[0]} = {hottest[1]:.1f}°C")
+                    logger.info(f"[TemperatureMonitor] Chọn nhiệt độ: {hottest[0]} = {hottest[1]:.1f}°C")
                     return True, f"Nhiệt độ {hottest[0]}: {hottest[1]:.1f}°C"
             except Exception as e:
-                print(f"[TemperatureMonitor] LHM WMI error: {e}")
+                logger.error(f"[TemperatureMonitor] LHM WMI error: {e}")
                 pass
             
             # Thử OpenHardwareMonitor
             try:
                 w = wmi.WMI(namespace="root\\OpenHardwareMonitor")
                 sensors = w.Sensor()
-                print(f"[TemperatureMonitor] OHM sensors found: {len(sensors)}")
+                logger.debug(f"[TemperatureMonitor] OHM sensors found: {len(sensors)}")
                 cpu_temps = []
                 for sensor in sensors:
-                    print(f"[TemperatureMonitor] OHM Sensor: {sensor.Name} - {sensor.SensorType} = {sensor.Value}")
+                    logger.debug(f"[TemperatureMonitor] OHM Sensor: {sensor.Name} - {sensor.SensorType} = {sensor.Value}")
                     if "Temperature" in str(sensor.SensorType):
                         sensor_name = str(sensor.Name).lower()
                         sensor_value = float(sensor.Value)
                         # Kiểm tra giá trị hợp lý (1-105°C, 0°C không hợp lý)
                         if not (1 <= sensor_value <= 105):
-                            print(f"[TemperatureMonitor] Bỏ qua {sensor.Name}: {sensor_value}°C (ngoài phạm vi)")
+                            logger.debug(f"[TemperatureMonitor] Bỏ qua {sensor.Name}: {sensor_value}°C (ngoài phạm vi)")
                             continue
                         # Loại trừ GPU sensors
                         if 'gpu' in sensor_name or 'nvidia' in sensor_name or 'amd' in sensor_name or 'radeon' in sensor_name:
@@ -319,7 +323,7 @@ class TemperatureMonitor:
                 if cpu_temps:
                     # Lấy nhiệt độ cao nhất
                     hottest = max(cpu_temps, key=lambda x: x[1])
-                    print(f"[TemperatureMonitor] Chọn nhiệt độ: {hottest[0]} = {hottest[1]:.1f}°C")
+                    logger.info(f"[TemperatureMonitor] Chọn nhiệt độ: {hottest[0]} = {hottest[1]:.1f}°C")
                     return True, f"Nhiệt độ {hottest[0]}: {hottest[1]:.1f}°C"
                 
                 # Không có CPU temp, thử tìm GPU temp làm fallback
@@ -332,20 +336,18 @@ class TemperatureMonitor:
                                 val = float(sensor.Value)
                                 if 1 <= val <= 105:
                                     gpu_temps.append((sensor.Name, val))
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.error(f"[TemperatureMonitor] GPU sensor value error: {e}")
                 if gpu_temps:
                     hottest_gpu = max(gpu_temps, key=lambda x: x[1])
-                    print(f"[TemperatureMonitor] Không có CPU temp, dùng GPU: {hottest_gpu[0]} = {hottest_gpu[1]:.1f}°C")
+                    logger.info(f"[TemperatureMonitor] Không có CPU temp, dùng GPU: {hottest_gpu[0]} = {hottest_gpu[1]:.1f}°C")
                     return True, f"Nhiệt độ GPU (không đọc được CPU): {hottest_gpu[1]:.1f}°C"
                     
             except Exception as e:
-                print(f"[TemperatureMonitor] OHM WMI error: {e}")
-                pass
+                logger.error(f"[TemperatureMonitor] OHM WMI error: {e}")
                 
         except ImportError as e:
-            print(f"[TemperatureMonitor] WMI import error: {e}")
-            pass
+            logger.error(f"[TemperatureMonitor] WMI import error: {e}")
         
         # 2. Thử psutil (Linux/một số Windows)
         try:
@@ -355,20 +357,20 @@ class TemperatureMonitor:
                     for entry in entries:
                         if entry.current:
                             return True, f"Nhiệt độ {name}: {entry.current:.1f}°C"
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[TemperatureMonitor] psutil sensors_temperatures error: {e}")
         
         # Không đọc được - kiểm tra OHM có cài không
         ohm_path = self.find_ohm()
         if not ohm_path:
             tools_dir = resource_path("tools")
             message = f"Chưa tìm thấy OpenHardwareMonitor. Vui lòng:\n1. Copy folder OpenHardwareMonitor vào: {tools_dir}\n2. Hoặc chạy OpenHardwareMonitor trước rồi hỏi lại."
-            print(f"[TemperatureMonitor] {message}")
+            logger.warning(f"[TemperatureMonitor] {message}")
             return False, message
         
         # OHM có nhưng chưa chạy → tự động khởi động
         if not self.is_ohm_running():
-            print("[TemperatureMonitor] OHM đã cài nhưng chưa chạy, đang khởi động...")
+            logger.info("[TemperatureMonitor] OHM đã cài nhưng chưa chạy, đang khởi động...")
             if self.start_ohm(admin=True):
                 time.sleep(12)  # Đợi lâu hơn cho WMI namespace
                 return self.get_temperature(retry_count + 1)
@@ -376,7 +378,7 @@ class TemperatureMonitor:
         # OHM đang chạy nhưng vẫn không đọc được → có thể WMI chưa sẵn sàng
         # Thử lại với delay tăng dần
         delay = 10 + (retry_count * 5)  # 10s, 15s, 20s, 25s, 30s
-        print(f"[TemperatureMonitor] OHM đang chạy nhưng không đọc được WMI (retry {retry_count + 1}), thử lại sau {delay}s...")
+        logger.info(f"[TemperatureMonitor] OHM đang chạy nhưng không đọc được WMI (retry {retry_count + 1}), thử lại sau {delay}s...")
         time.sleep(delay)
         return self.get_temperature(retry_count + 1)
 

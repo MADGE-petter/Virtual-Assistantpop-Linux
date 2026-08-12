@@ -125,8 +125,8 @@ class SqlService:
             if result and result[0]:
                 return result[0].replace('T', ' ')[:19]
             return "Chưa có dữ liệu"
-        except Exception:
-            return "Không xác định"
+        except Exception as e:
+            logger.error(f"[Sql] get_first_conversation_date error: {e}")
     
     def delete_old_conversations(self, days=30):
        
@@ -203,6 +203,6 @@ class SqlService:
             
             conn.commit()
             conn.close()
-            print(f"Đã cập nhật tên từ '{old_name}' thành '{new_name}' (session: {session_id})")
+            logger.info(f"Đã cập nhật tên từ '{old_name}' thành '{new_name}' (session: {session_id})")
         except Exception as e:
             logger.error("Error updating user name: %s", e, exc_info=True)

@@ -3,6 +3,9 @@ Agent Logging Utility - Dùng chung cho tất cả Agents
 Chuyển từ AppHandler để đảm bảo Habit Tracking không bị mất
 """
 from datetime import datetime
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def log_app_opened(app_name: str, user_name: str = "user", user_id: int = 1):
@@ -12,7 +15,8 @@ def log_app_opened(app_name: str, user_name: str = "user", user_id: int = 1):
         try:
             from model.Sql import SqlService
             actual_user_id = SqlService().db.get_or_create_user(user_name)
-        except Exception:
+        except Exception as e:
+            logger.error(f"[AgentLogger] SqlService error: {e}")
             actual_user_id = user_id
 
     try:
@@ -20,13 +24,12 @@ def log_app_opened(app_name: str, user_name: str = "user", user_id: int = 1):
         analytics = get_analytics_service(user_name or "user")
         analytics.log_app_opened(app_name)
     except Exception as e:
-        print(f"[AgentLogger] Analytics log error: {e}")
-    
+        logger.error(f"[AgentLogger] Analytics log error: {e}")
     # Log cho habit tracker (học thói quen)
     try:
         from controller.habit_tracker import get_habit_tracker
         habit_tracker = get_habit_tracker()
         habit_tracker.log_app_opened(actual_user_id, app_name)
-        print(f"[HabitTracker] Logged: {app_name} at {datetime.now().strftime('%H:%M')}")
+        logger.info(f"[HabitTracker] Logged: {app_name} at {datetime.now().strftime('%H:%M')}")
     except Exception as e:
-        print(f"[AgentLogger] Habit tracker error: {e}")
+        logger.error(f"[AgentLogger] Habit tracker error: {e}")

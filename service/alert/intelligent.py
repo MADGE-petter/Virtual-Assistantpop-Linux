@@ -11,6 +11,9 @@ Unlike hard-coded thresholds (if cpu > 90: alert()), this service:
 
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from .types import AlertContext, AlertSeverity, AlertType
 
@@ -60,7 +63,7 @@ class IntelligentAlertService:
                 return 'general'
                 
         except Exception as e:
-            print(f"[IntelligentAlertService] Error detecting app context: {e}")
+            logger.error(f"[IntelligentAlertService] Error detecting app context: {e}")
             return 'general'
     
     def learn_baseline(self, user_id: int, metric_type: str, value: float,
@@ -125,7 +128,7 @@ class IntelligentAlertService:
                 conn.commit()
                 
         except Exception as e:
-            print(f"[IntelligentAlertService] Error learning baseline: {e}")
+            logger.error(f"[IntelligentAlertService] Error learning baseline: {e}")
     
     def check_metric(self, user_id: int, metric_type: str, current_value: float,
                      app_context: str = None) -> Optional[Dict]:
@@ -220,7 +223,7 @@ class IntelligentAlertService:
                 }
                 
         except Exception as e:
-            print(f"[IntelligentAlertService] Error checking metric: {e}")
+            logger.error(f"[IntelligentAlertService] Error checking metric: {e}")
             return None
     
     def _record_alert(self, user_id: int, alert_type: str, severity: int,
@@ -240,5 +243,6 @@ class IntelligentAlertService:
                 conn.commit()
                 return cursor.lastrowid
                 
-        except Exception:
+        except Exception as e:
+            logger.error(f"[IntelligentAlert] insert_alert error: {e}")
             return 0

@@ -221,8 +221,8 @@ class UsageTracker:
             try:
                 dt = datetime.strptime(f"{row['date']} {row['timestamp']}", '%Y-%m-%d %H:%M:%S')
                 events.append({'dt': dt, 'app_name': row['app_name']})
-            except Exception:
-                continue
+            except Exception as e:
+                logger.error(f"[UsageTracker] datetime parse error: {e}")
 
         app_totals = {}
         for index, event in enumerate(events):

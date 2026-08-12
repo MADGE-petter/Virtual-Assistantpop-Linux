@@ -6,6 +6,9 @@ Chịu trách nhiệm tạo gợi ý dựa trên thói quen người dùng
 
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HabitRecommendationService:
@@ -50,8 +53,8 @@ class HabitRecommendationService:
                             'message': f'Thói quen dùng {mucTieu}: độ tin cậy {doTinCay:.0%}, {soLanGoiY} lần.',
                             'priority': 'high'
                         })
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"[HabitRecommendationService] Phase 1 error: {e}")
 
             # === PHASE 2: Analyze app_usage_logs for frequent apps ===
             daily_usage = []
@@ -59,7 +62,8 @@ class HabitRecommendationService:
             if hasattr(self.repo, 'get_recent_app_usage_by_day'):
                 try:
                     daily_usage = self.repo.get_recent_app_usage_by_day(user_id, days=days)
-                except Exception:
+                except Exception as e:
+                    logger.error(f"[HabitRecommendationService] get_recent_app_usage_by_day error: {e}")
                     daily_usage = []
 
             if daily_usage:
@@ -142,7 +146,8 @@ class HabitRecommendationService:
             self._cache[cache_key] = (now, result)
             
             return result
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRecommendationService] suggest_based_on_habits error: {e}")
             return []
     
     def suggest_based_on_sequence(self, user_id: int, current_app: str) -> List[Dict]:
@@ -165,7 +170,8 @@ class HabitRecommendationService:
             
             return suggestions
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRecommendationService] suggest_based_on_sequence error: {e}")
             return []
     
     def suggest_based_on_workflow(self, user_id: int) -> List[Dict]:
@@ -189,7 +195,8 @@ class HabitRecommendationService:
             
             return suggestions
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRecommendationService] suggest_based_on_workflow error: {e}")
             return []
     
     def get_all_suggestions(self, user_id: int, current_app: str = None) -> List[Dict]:

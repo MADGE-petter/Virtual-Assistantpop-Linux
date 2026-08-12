@@ -8,6 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from database.base_repository import BaseRepository
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HabitRepository(BaseRepository):
@@ -29,7 +32,8 @@ class HabitRepository(BaseRepository):
                 """, (user_id, app_name, timestamp))
                 conn.commit()
                 return cursor.lastrowid
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error inserting app usage log: {e}")
             return 0
     
     def get_recent_app_usage(self, user_id: int, days: int = 7) -> List[Tuple]:
@@ -51,7 +55,8 @@ class HabitRepository(BaseRepository):
                     ORDER BY count DESC, last_opened DESC
                 """, (user_id, modifier))
                 return cursor.fetchall()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting recent app usage: {e}")
             return []
 
     def get_today_app_count(self, user_id: int, app_name: str) -> int:
@@ -67,7 +72,8 @@ class HabitRepository(BaseRepository):
                 """, (user_id, app_name, today_str, today_str))
                 result = cursor.fetchone()
                 return result[0] if result else 0
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting today app count: {e}")
             return 0
 
     def get_recent_app_usage_by_day(self, user_id: int, days: int = 7) -> List[Tuple]:
@@ -88,7 +94,8 @@ class HabitRepository(BaseRepository):
                     GROUP BY tenUngDung, DATE(thoiGianMo)
                 """, (user_id, modifier))
                 return cursor.fetchall()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting recent app usage by day: {e}")
             return []
 
     def find_habit(self, user_id: int, habit_type: str, target: str, 
@@ -104,7 +111,8 @@ class HabitRepository(BaseRepository):
                       AND gioTrongNgay = ? AND ngayTrongTuan = ?
                 """, (user_id, habit_type, target, time_bucket, day_type))
                 return cursor.fetchone()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error finding habit: {e}")
             return None
     
     def update_habit(self, habit_id: int, frequency: int, confidence: float, 
@@ -119,8 +127,8 @@ class HabitRepository(BaseRepository):
                     WHERE id = ?
                 """, (frequency, confidence, last_observed, habit_id))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error updating habit: {e}")
     
     def insert_habit(self, user_id: int, habit_type: str, target: str,
                      time_bucket: int, day_type: str, frequency: int = 1,
@@ -138,7 +146,8 @@ class HabitRepository(BaseRepository):
                       frequency, confidence, datetime.now()))
                 conn.commit()
                 return cursor.lastrowid
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error inserting habit: {e}")
             return 0
     
     def get_user_habits_raw(self, user_id: int, min_confidence: float = 0.0) -> List[Tuple]:
@@ -153,7 +162,8 @@ class HabitRepository(BaseRepository):
                     ORDER BY doTinCay DESC
                 """, (user_id, min_confidence))
                 return cursor.fetchall()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting user habits: {e}")
             return []
     
     # ========== App Sequences ==========
@@ -169,7 +179,8 @@ class HabitRepository(BaseRepository):
                     WHERE maNguoiDung = ? AND appTruoc = ? AND appSau = ?
                 """, (user_id, app_before, app_after))
                 return cursor.fetchone()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error finding sequence: {e}")
             return None
     
     def update_sequence(self, seq_id: int, frequency: int, confidence: float,
@@ -184,8 +195,8 @@ class HabitRepository(BaseRepository):
                     WHERE id = ?
                 """, (frequency, confidence, avg_time_between, last_updated, seq_id))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error updating sequence: {e}")
     
     def insert_sequence(self, user_id: int, app_before: str, app_after: str,
                        time_between: int) -> int:
@@ -200,7 +211,8 @@ class HabitRepository(BaseRepository):
                 """, (user_id, app_before, app_after, time_between, datetime.now()))
                 conn.commit()
                 return cursor.lastrowid
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error inserting sequence: {e}")
             return 0
     
     def get_sequences_from_app(self, user_id: int, app_name: str, min_confidence: float) -> List[Tuple]:
@@ -215,7 +227,8 @@ class HabitRepository(BaseRepository):
                     ORDER BY soLanGap DESC
                 """, (user_id, app_name, min_confidence))
                 return cursor.fetchall()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting sequences from app: {e}")
             return []
     
     # ========== Workflows ==========
@@ -231,7 +244,8 @@ class HabitRepository(BaseRepository):
                     WHERE maNguoiDung = ? AND appChain = ?
                 """, (user_id, app_chain))
                 return cursor.fetchone()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error finding workflow: {e}")
             return None
     
     def update_workflow(self, wf_id: int, frequency: int, confidence: float, last_executed: datetime) -> None:
@@ -245,8 +259,8 @@ class HabitRepository(BaseRepository):
                     WHERE id = ?
                 """, (frequency, confidence, last_executed, wf_id))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error updating workflow: {e}")
     
     def insert_workflow(self, user_id: int, name: str, app_chain: str) -> int:
         """Insert new workflow"""
@@ -260,7 +274,8 @@ class HabitRepository(BaseRepository):
                 """, (user_id, name, app_chain, datetime.now()))
                 conn.commit()
                 return cursor.lastrowid
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error inserting workflow: {e}")
             return 0
     
     def get_workflows(self, user_id: int, min_confidence: float, limit: int) -> List[Tuple]:
@@ -276,7 +291,8 @@ class HabitRepository(BaseRepository):
                     LIMIT ?
                 """, (user_id, min_confidence, limit))
                 return cursor.fetchall()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting workflows: {e}")
             return []
     
     # ========== Session Context ==========
@@ -292,7 +308,8 @@ class HabitRepository(BaseRepository):
                     WHERE maNguoiDung = ?
                 """, (user_id,))
                 return cursor.fetchone()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting session context: {e}")
             return None
     
     def update_session_context(self, user_id: int, app_chain: str, last_app: str,
@@ -307,8 +324,8 @@ class HabitRepository(BaseRepository):
                     VALUES (?, ?, ?, ?, ?)
                 """, (user_id, app_chain, last_app, last_time, session_start))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error updating session context: {e}")
     
     def reset_session_context(self, user_id: int) -> None:
         """Delete session context"""
@@ -320,8 +337,8 @@ class HabitRepository(BaseRepository):
                     WHERE maNguoiDung = ?
                 """, (user_id,))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error resetting session context: {e}")
     
     # ========== Table Stats ==========
     
@@ -359,5 +376,6 @@ class HabitRepository(BaseRepository):
                 stats['newest_log'] = date_range[1] if date_range else None
                 
                 return stats
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitRepository] Error getting table counts: {e}")
             return {}

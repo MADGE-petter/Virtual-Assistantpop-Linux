@@ -3,23 +3,41 @@
 import re
 import time
 
+from controller.handlers.base_handler import BaseHandler
 
-class GreetingHandler:
+
+class GreetingHandler(BaseHandler):
     """Handler for greeting, name, help, and control intents."""
     
     def __init__(self, audio_service=None, view=None):
-        self.audio_service = audio_service
-        self.view = view
-        self.user_name = "bạn"
+        super().__init__(audio_service, view)
     
-    def set_audio_service(self, audio_service):
-        self.audio_service = audio_service
-    
-    def set_view(self, view):
-        self.view = view
-    
-    def set_user_name(self, name):
-        self.user_name = name
+    def handle(self, text):
+        """Main handler entry point - routes to appropriate method based on text."""
+        text_lower = text.lower()
+        
+        # Check for greeting
+        if any(keyword in text_lower for keyword in ['chào', 'hello', 'hi', 'hey', 'alo']):
+            return self.handle_greeting(text)
+        
+        # Check for name
+        if any(keyword in text_lower for keyword in ['tôi tên', 'tên tôi', 'gọi tôi', 'kêu tôi', 'tôi là']):
+            return self.handle_name(text)
+        
+        # Check for help
+        if any(keyword in text_lower for keyword in ['giúp', 'help', 'hướng dẫn', 'làm gì']):
+            return self.handle_help(text)
+        
+        # Check for sleep
+        if any(keyword in text_lower for keyword in ['ngủ', 'sleep', 'nghỉ', 'tạm dừng']):
+            return self.handle_sleep(text)
+        
+        # Check for goodbye
+        if any(keyword in text_lower for keyword in ['tạm biệt', 'bye', 'kết thúc', 'thoát']):
+            return self.handle_goodbye(text)
+        
+        # Default to unknown
+        return self.handle_unknown(text)
     
     def handle_greeting(self, text):
         """Xử lý chào hỏi."""

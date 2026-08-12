@@ -3,9 +3,13 @@
 import hashlib
 import json
 import os
+import sqlite3
 
 from database.db_manager import get_db_manager
 from utils.paths import get_database_path, get_writeable_path
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class LoginService:
@@ -36,7 +40,7 @@ class LoginService:
                 """)
                 conn.commit()
         except Exception as e:
-            print(f"[LoginService] Lỗi tạo bảng users: {e}")
+            logger.error(f"[LoginService] Lỗi tạo bảng users: {e}")
     
     def _ensure_sessions_table(self):
         try:
@@ -54,7 +58,7 @@ class LoginService:
                 """)
                 conn.commit()
         except Exception as e:
-            print(f"[LoginService] Lỗi tạo bảng sessions: {e}")
+            logger.error(f"[LoginService] Lỗi tạo bảng sessions: {e}")
     
     def hash_password(self, password):
       
@@ -74,7 +78,7 @@ class LoginService:
             return result[0] if result else None
                 
         except Exception as e:
-            print(f"[LoginService] Lỗi đọc database: {e}")
+            logger.error(f"[LoginService] Lỗi đọc database: {e}")
             return None
     
     def save_new_user(self, username, password):
@@ -89,14 +93,14 @@ class LoginService:
                     VALUES (?, ?)
                 ''', (username, password_hash))
                 conn.commit()
-            print(f"[LoginService] User {username} registered successfully!")
+            logger.info(f"[LoginService] User {username} registered successfully!")
             return True
             
         except sqlite3.IntegrityError:
-            print(f"[LoginService] User {username} already exists!")
+            logger.warning(f"[LoginService] User {username} already exists!")
             return False
         except Exception as e:
-            print(f"[LoginService] Lỗi đăng ký user: {e}")
+            logger.error(f"[LoginService] Lỗi đăng ký user: {e}")
             return False
     
     def authenticate_user(self, username, password):
@@ -135,7 +139,7 @@ class LoginService:
                     return {**default_settings, **loaded}
             return default_settings
         except Exception as e:
-            print(f"[LoginService] Lỗi tải settings: {e}")
+            logger.error(f"[LoginService] Lỗi tải settings: {e}")
             return default_settings
     
     def save_settings(self, settings):
@@ -145,7 +149,7 @@ class LoginService:
                 json.dump(settings, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"[LoginService] Lỗi lưu settings: {e}")
+            logger.error(f"[LoginService] Lỗi lưu settings: {e}")
             return False
     
     def load_users_json(self):
@@ -155,7 +159,7 @@ class LoginService:
                     return json.load(f)
             return {}
         except Exception as e:
-            print(f"[LoginService] Lỗi tải users JSON: {e}")
+            logger.error(f"[LoginService] Lỗi tải users JSON: {e}")
             return {}
     
     def save_users_json(self, users):
@@ -164,5 +168,5 @@ class LoginService:
                 json.dump(users, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"[LoginService] Lỗi lưu users JSON: {e}")
+            logger.error(f"[LoginService] Lỗi lưu users JSON: {e}")
             return False

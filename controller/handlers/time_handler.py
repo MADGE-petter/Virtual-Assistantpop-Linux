@@ -3,6 +3,9 @@
 import datetime
 
 from controller.handlers.base_handler import BaseHandler
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TimeHandler(BaseHandler):
@@ -16,5 +19,6 @@ class TimeHandler(BaseHandler):
 Hôm nay là ngày {now.day} tháng {now.month} năm {now.year}
 Thứ hôm nay là {now.strftime('%A')}"""
             return self.speak_and_return(content, wait=5)
-        except Exception:
+        except Exception as e:
+            logger.error(f"[TimeHandler] Error getting time: {e}")
             return "Xin lỗi, tôi không thể lấy thông tin thời gian ngay bây giờ."

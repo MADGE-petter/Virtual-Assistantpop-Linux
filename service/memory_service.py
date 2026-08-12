@@ -2,6 +2,9 @@
 from typing import Optional
 
 from controller.interfaces import ISqlService
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MemoryService:
@@ -13,9 +16,9 @@ class MemoryService:
         """Lưu 1 lượt hội thoại (user + bot)."""
         try:
             self.sql.save_conversation(user_name, user_msg, bot_response, session_id)
-            print(f"[MemoryService] Saved: '{user_msg[:30]}...' -> '{bot_response[:30]}...'")
+            logger.debug(f"[MemoryService] Saved: '{user_msg[:30]}...' -> '{bot_response[:30]}...'")
         except Exception as e:
-            print(f"[MemoryService] Error saving: {e}")
+            logger.error(f"[MemoryService] Error saving: {e}")
     
     def get_session_history(self, session_id: int) -> list:
         """Lấy history của 1 session."""

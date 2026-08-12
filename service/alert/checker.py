@@ -4,11 +4,15 @@ Alert Checkers - Các bộ giám sát CPU, RAM, Disk, Temperature, Battery
 
 import re
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Optional, Tuple
 
 import psutil
 
+from utils.logger import get_logger
 from .types import Alert, AlertLevel, AlertThreshold
+
+logger = get_logger(__name__)
 
 
 class BaseMonitor(ABC):
@@ -131,7 +135,7 @@ class DiskMonitor(BaseMonitor):
             try:
                 disk_info[p.mountpoint] = psutil.disk_usage(p.mountpoint).percent
             except Exception as e:
-                print(f"[DiskMonitor] Error checking {p.mountpoint}: {e}")
+                logger.error(f"[DiskMonitor] Error checking {p.mountpoint}: {e}")
                 continue
         
         # Find partition with highest usage
@@ -199,7 +203,7 @@ class TempMonitor(BaseMonitor):
                 danger_msg
             )
         except Exception as e:
-            print(f"[Monitor] Error checking {self.__class__.__name__}: {e}")
+            logger.error(f"[Monitor] Error checking {self.__class__.__name__}: {e}")
             return None, False
             
         return None, False
@@ -237,7 +241,7 @@ class BatteryMonitor(BaseMonitor):
                 return None, True
                 
         except Exception as e:
-            print(f"[Monitor] Error checking {self.__class__.__name__}: {e}")
+            logger.error(f"[Monitor] Error checking {self.__class__.__name__}: {e}")
             return None, False
             
         return None, False

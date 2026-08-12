@@ -1,6 +1,9 @@
 import os
 import platform
 import subprocess
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def open_file_or_directory(path: str):
@@ -13,12 +16,14 @@ def open_file_or_directory(path: str):
             os.startfile(path)
             return f"Đã mở '{path}'."
         except Exception as e:
+            logger.error(f"Lỗi khi mở '{path}': {e}")
             return f"Lỗi khi mở '{path}': {e}"
     elif platform.system() == "Darwin":  # macOS
         try:
             subprocess.run(["open", path])
             return f"Đã mở '{path}'."
         except Exception as e:
+            logger.error(f"Lỗi khi mở '{path}': {e}")
             return f"Lỗi khi mở '{path}': {e}"
     elif platform.system() == "Linux":
         try:
@@ -27,6 +32,7 @@ def open_file_or_directory(path: str):
             )  # Lệnh phổ biến trên nhiều bản phân phối Linux
             return f"Đã mở '{path}'."
         except Exception as e:
+            logger.error(f"Lỗi khi mở '{path}': {e}")
             return f"Lỗi khi mở '{path}': {e}"
     else:
         return "Hệ điều hành không được hỗ trợ để mở tệp/thư mục."
@@ -56,38 +62,33 @@ def list_directory_contents(path: str):
         return response.strip()
 
     except Exception as e:
+        logger.error(f"Lỗi khi liệt kê nội dung thư mục '{path}': {e}")
         return f"Lỗi khi liệt kê nội dung thư mục '{path}': {e}"
 
 
 if __name__ == "__main__":
-    print("--- Thử nghiệm chức năng quản lý tệp và thư mục ---")
-
+    logger.info("--- Thử nghiệm chức năng quản lý tệp và thư mục ---")
     # Mở một thư mục hiện có (ví dụ: thư mục dự án)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    print(f"Thử mở thư mục hiện tại: {current_dir}")
-    print(open_file_or_directory(current_dir))
-
+    logger.info(f"Thử mở thư mục hiện tại: {current_dir}")
+    logger.info(open_file_or_directory(current_dir))
     # Mở một tệp hiện có (ví dụ: POP.py)
     pop_file_path = os.path.join(current_dir, "POP.py")
     if os.path.exists(pop_file_path):
-        print(f"\nThử mở tệp POP.py: {pop_file_path}")
-        print(open_file_or_directory(pop_file_path))
+        logger.info(f"\nThử mở tệp POP.py: {pop_file_path}")
+        logger.info(open_file_or_directory(pop_file_path))
     else:
-        print(f"\nKhông tìm thấy tệp POP.py tại: {pop_file_path}")
-
+        logger.info(f"\nKhông tìm thấy tệp POP.py tại: {pop_file_path}")
     # Liệt kê nội dung thư mục hiện tại
-    print(f"\nLiệt kê nội dung thư mục hiện tại: {current_dir}")
-    print(list_directory_contents(current_dir))
-
+    logger.info(f"\nLiệt kê nội dung thư mục hiện tại: {current_dir}")
+    logger.info(list_directory_contents(current_dir))
     # Thử mở đường dẫn không tồn tại
-    print("\nThử mở đường dẫn không tồn tại:")
-    print(open_file_or_directory("C:\\duong_dan_khong_ton_tai"))
-
+    logger.info("\nThử mở đường dẫn không tồn tại:")
+    logger.info(open_file_or_directory("C:\\duong_dan_khong_ton_tai"))
     # Thử liệt kê nội dung đường dẫn không tồn tại
-    print("\nThử liệt kê nội dung đường dẫn không tồn tại:")
-    print(list_directory_contents("C:\\thu_muc_khong_ton_tai"))
-
+    logger.info("\nThử liệt kê nội dung đường dẫn không tồn tại:")
+    logger.info(list_directory_contents("C:\\thu_muc_khong_ton_tai"))
     # Thử liệt kê nội dung của một tệp (không phải thư mục)
     if os.path.exists(pop_file_path):
-        print(f"\nThử liệt kê nội dung của tệp POP.py: {pop_file_path}")
-        print(list_directory_contents(pop_file_path))
+        logger.info(f"\nThử liệt kê nội dung của tệp POP.py: {pop_file_path}")
+        logger.info(list_directory_contents(pop_file_path))

@@ -8,6 +8,7 @@ from controller.interfaces import (
     ISqlService,
     IUserController,
 )
+from service.alert import AlertManager
 from service.conversation_flow_service import ConversationFlowService
 
 
@@ -18,14 +19,14 @@ class ConversationController:
         sql_service: ISqlService,
         action_handler: IActionHandler,
         user_controller: IUserController,
-        interactive_alert_service=None,
+        alert_manager: Optional[AlertManager] = None,
     ):
         self.flow_service = ConversationFlowService(
             audio_service,
             sql_service,
             action_handler,
             user_controller,
-            interactive_alert_service,
+            alert_manager,
         )
 
     def init_intent_service(self):

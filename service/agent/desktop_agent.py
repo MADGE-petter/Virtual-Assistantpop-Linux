@@ -108,16 +108,17 @@ class DesktopAgent(BaseAgent):
                 os.startfile(app_name)
                 log_app_opened(app_name, user_name)
                 return ToolResult(success=True, data={"text": f"Đã mở {app_name}", "app": app_name})
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[DesktopAgent] os.startfile failed: {e}")
             
             # Thử subprocess
             try:
                 subprocess.Popen(app_name, shell=True)
                 log_app_opened(app_name, user_name)
                 return ToolResult(success=True, data={"text": f"Đã mở {app_name}", "app": app_name})
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[DesktopAgent] subprocess.Popen failed: {e}")
+                return ToolResult(success=False, error=f"Không tìm thấy ứng dụng: {app_name}")
             
             return ToolResult(success=False, error=f"Không tìm thấy ứng dụng: {app_name}")
         except Exception as e:

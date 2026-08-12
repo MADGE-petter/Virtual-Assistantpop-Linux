@@ -4,10 +4,14 @@ Tập trung các chỉ số hệ thống dựa trên psutil và các tiện ích
 để các module khác gọi service này thay vì tự dùng psutil trực tiếp.
 """
 from typing import Dict, List
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import psutil
-except Exception:
+except Exception as e:
+    logger.error(f"[SystemMonitoringService] psutil import error: {e}")
     psutil = None
 
 
@@ -57,7 +61,8 @@ def get_temperature_readings():
                 if entry.current is not None:
                     readings.append({'name': name, 'current': entry.current})
         return readings
-    except Exception:
+    except Exception as e:
+        logger.error(f"[SystemMonitoringService] get_temperature_readings error: {e}")
         return []
 
 
@@ -67,7 +72,8 @@ def get_disk_usage(path: str = "C:\\"):
     try:
         disk = psutil.disk_usage(path)
         return f"Ổ đĩa {path} sử dụng {disk.percent}%"
-    except Exception:
+    except Exception as e:
+        logger.error(f"[SystemMonitoringService] get_disk_usage error: {e}")
         return f"Không thể đọc ổ đĩa {path}"
 
 
@@ -81,7 +87,8 @@ def get_top_ram_processes(limit: int = 5) -> List[Dict]:
             if mem_info:
                 ram_mb = mem_info.rss / 1024 / 1024
                 processes.append({'name': proc.info.get('name') or 'Unknown', 'pid': proc.info.get('pid'), 'ram_mb': ram_mb})
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.error(f"[SystemMonitoringService] process_iter error: {e}")
             continue
     processes.sort(key=lambda x: x.get('ram_mb', 0), reverse=True)
     return processes[:limit]
@@ -96,7 +103,8 @@ def get_top_cpu_processes(limit: int = 5) -> List[Dict]:
             cpu_percent = proc.cpu_percent(interval=0.1)
             if cpu_percent and cpu_percent > 0:
                 processes.append({'name': proc.info.get('name') or 'Unknown', 'pid': proc.info.get('pid'), 'cpu_percent': cpu_percent})
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.error(f"[SystemMonitoringService] process_iter error: {e}")
             continue
     processes.sort(key=lambda x: x.get('cpu_percent', 0), reverse=True)
     return processes[:limit]
@@ -128,7 +136,8 @@ def get_battery():
         plugged = battery.power_plugged
         status = "Đang sạc" if plugged else "Đang dùng pin"
         return f"Pin {percent}% - {status}"
-    except Exception:
+    except Exception as e:
+        logger.error(f"[SystemMonitoringService] get_battery error: {e}")
         return "Không đọc được pin"
 
 
@@ -155,7 +164,8 @@ def get_temperature_alert():
             return "warning", f"Nhiệt độ {hottest_sensor}: {max_temp}°C - Đang nóng"
         else:
             return "normal", f"Nhiệt độ {hottest_sensor}: {max_temp}°C - Bình thường"
-    except Exception:
+    except Exception as e:
+        logger.error(f"[SystemMonitoringService] get_temperature_alert error: {e}")
         return None, "Không hỗ trợ đọc nhiệt độ"
 
 
@@ -172,7 +182,8 @@ def get_full_system_status() -> Dict:
             try:
                 d = psutil.disk_usage(p.mountpoint)
                 disk_info.append({'mountpoint': p.mountpoint, 'percent': d.percent})
-            except Exception:
+            except Exception as e:
+                logger.error(f"[SystemMonitoringService] disk_usage error: {e}")
                 continue
         status['disk_info'] = disk_info
         battery = psutil.sensors_battery()
@@ -189,9 +200,11 @@ def get_full_system_status() -> Dict:
                     for entry in entries:
                         if entry.current:
                             temp = max(temp or 0, entry.current)
-        except Exception:
+        except Exception as e:
+            logger.error(f"[SystemMonitoringService] sensors_temperatures error: {e}")
             temp = None
         status['temperature'] = temp
-    except Exception:
+    except Exception as e:
+        logger.error(f"[SystemMonitoringService] get_full_system_status error: {e}")
         return {}
     return status

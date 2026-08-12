@@ -1,5 +1,8 @@
 """Intent Service - Xử lý intent classification."""
 from typing import Optional
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from .text_utils import extract_name
 
@@ -20,9 +23,9 @@ class IntentService:
             try:
                 from service.intern import IntentClassifier
                 self._classifier = IntentClassifier
-                print("[IntentService] Classifier initialized")
+                logger.debug("[IntentService] Classifier initialized")
             except Exception as e:
-                print(f"[IntentService] Error loading classifier: {e}")
+                logger.error(f"[IntentService] Error loading classifier: {e}")
     
     def classify(self, text: str) -> str:
         """Classify intent từ text."""
@@ -31,7 +34,7 @@ class IntentService:
         
         if self._classifier:
             result = self._classifier.classify(text)
-            print(f"[IntentService] '{text[:30]}...' -> {result}")
+            logger.debug(f"[IntentService] '{text[:30]}...' -> {result}")
             return result
         
         return "unknown"

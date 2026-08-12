@@ -145,8 +145,8 @@ class CodeAgent(BaseAgent):
         try:
             result = subprocess.run(["where", "wt"], capture_output=True, text=True)
             return result.returncode == 0
-        except:
-            return False
+        except Exception as e:
+            logger.error(f"[CodeAgent] Error checking wt: {e}")
     
     def _git_status(self, path: str = None) -> ToolResult:
         """Git status"""
@@ -195,8 +195,8 @@ class CodeAgent(BaseAgent):
             try:
                 os.startfile(path)
                 return ToolResult(success=True, data={"text": f"Đã mở {path} (không tìm thấy VSCode)"})
-            except:
-                return ToolResult(success=False, error=str(e))
+            except Exception as e2:
+                logger.error(f"[CodeAgent] Error opening VSCode: {e2}")
     
     def _run_python(self, file: str, args: str = "") -> ToolResult:
         """Chạy file Python"""

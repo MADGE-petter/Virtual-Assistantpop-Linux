@@ -6,10 +6,15 @@ Chạy nền, kiểm tra mỗi phút để tìm thói quen phù hợp với th�
 """
 
 import random
-import threading
 import time
+import threading
 from datetime import datetime, timedelta
 from typing import Callable, Optional
+
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ProactiveService:
@@ -29,6 +34,7 @@ class ProactiveService:
         self.last_suggested = {}  # {habit_id: last_suggested_time}
         self.cooldown_minutes = 30
         
+        self._thread_mgr = get_thread_manager("ProactiveService")
         self._init_tracker()
     
     def _init_tracker(self):
@@ -37,22 +43,24 @@ class ProactiveService:
             from controller.habit_tracker import get_habit_tracker
             self.habit_tracker = get_habit_tracker()
         except Exception as e:
-            print(f"[ProactiveService] Error init tracker: {e}")
+            logger.error(f"[ProactiveService] Error init tracker: {e}")
     
     def start(self):
         """Bắt đầu service chạy nền"""
         if not self.running:
             self.running = True
-            self.thread = threading.Thread(target=self._monitor_loop, daemon=True)
-            self.thread.start()
-            print("[ProactiveService] Started - monitoring habits every 60s")
+            self.thread = self._thread_mgr.start_thread(
+                self._monitor_loop,
+                name="Proactive-Monitor"
+            )
+            logger.info("[ProactiveService] Started - monitoring habits every 60s")
     
     def stop(self):
         """Dừng service"""
         self.running = False
         if self.thread:
             self.thread.join(timeout=2)
-        print("[ProactiveService] Stopped")
+        logger.info("[ProactiveService] Stopped")
     
     def _monitor_loop(self):
         """Vòng lặp kiểm tra định kỳ"""
@@ -60,7 +68,7 @@ class ProactiveService:
             try:
                 self._check_and_suggest()
             except Exception as e:
-                print(f"[ProactiveService] Error in monitor loop: {e}")
+                logger.error(f"[ProactiveService] Error in monitor loop: {e}")
             
             # Ngủ 60 giây
             time.sleep(self.check_interval)
@@ -98,7 +106,7 @@ class ProactiveService:
                 # Ghi lại thời gian gợi ý
                 self.last_suggested[khoaThoiQuen] = now
                 
-                print(f"[ProactiveService] Đã gợi ý: {tenMucTieu} lúc {now.strftime('%H:%M')}")
+                logger.info(f"[ProactiveService] Đã gợi ý: {tenMucTieu} lúc {now.strftime('%H:%M')}")
                 
                 # Chỉ gợi ý 1 thói quen mỗi lần check
                 break

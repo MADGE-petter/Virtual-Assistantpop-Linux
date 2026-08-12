@@ -2,6 +2,9 @@
 
 import os
 import sys
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class UserService:  
@@ -18,15 +21,15 @@ class UserService:
             if recent_user and recent_user != "bạn":
                 self.login_name = recent_user
                 self.display_name = self.get_display_name_by_login(self.login_name)
-                print(f"[DB] Loaded user name: {self.login_name} - {self.display_name}")
+                logger.info(f"[DB] Loaded user name: {self.login_name} - {self.display_name}")
             else:
                 self.login_name = "bạn"
                 self.display_name = None
-                print("[DB] No user name found, using default 'bạn'")
+                logger.info("[DB] No user name found, using default 'bạn'")
         except Exception as e:
             self.login_name = "bạn"
             self.display_name = None
-            print(f"[DB] Error loading user name: {e}")
+            logger.error(f"[DB] Error loading user name: {e}")
         
         return self.login_name
     
@@ -51,7 +54,7 @@ class UserService:
                 return ho_ten if ho_ten else None
             return None
         except Exception as e:
-            print(f"Error getting display name: {e}")
+            logger.error(f"Error getting display name: {e}")
             return None
     
     def update_display_name_by_login(self, login_name, display_name):
@@ -68,10 +71,10 @@ class UserService:
             
             conn.commit()
             conn.close()
-            print(f"Updated display name for {login_name} to: {display_name}")
+            logger.info(f"Updated display name for {login_name} to: {display_name}")
             return True
         except Exception as e:
-            print(f"Error updating display name: {e}")
+            logger.error(f"Error updating display name: {e}")
             return False
     
     def update_user_name(self, new_name, current_session=None):
@@ -86,7 +89,7 @@ class UserService:
             success = self.update_display_name_by_login(self.login_name, new_name)
             if success:
                 self.display_name = new_name
-                print(f"[UserService] Updated display name: {old_name} -> {new_name}")
+                logger.info(f"[UserService] Updated display name: {old_name} -> {new_name}")
                 return old_name, new_name       
         return old_name, None   
         

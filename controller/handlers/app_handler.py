@@ -5,33 +5,37 @@ import subprocess
 import webbrowser
 from datetime import datetime
 
+from controller.handlers.base_handler import BaseHandler
 from service.app_scanner import AppScanner
 from service.intern import extract_app_name, extract_domain
 # Dùng chung logging từ agent_logger thay vì trùng lặp
 from service.agent.agent_logger import log_app_opened
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
-class AppHandler:
+class AppHandler(BaseHandler):
     """Handler for opening websites and applications."""
     
     def __init__(self, audio_service=None, view=None):
-        self.audio_service = audio_service
-        self.view = view
+        super().__init__(audio_service, view)
         self.app_scanner = AppScanner()
         self.login_username = None
-        self.user_name = "bạn"
-    
-    def set_audio_service(self, audio_service):
-        self.audio_service = audio_service
-    
-    def set_view(self, view):
-        self.view = view
-    
-    def set_user_name(self, name):
-        self.user_name = name
 
     def set_login_name(self, name):
         self.login_username = name
+    
+    def handle(self, text):
+        """Main handler entry point - routes to appropriate method based on text."""
+        text_lower = text.lower()
+        
+        # Check if it's a website request
+        if any(keyword in text_lower for keyword in ['mở trang', 'mở web', 'mở website', 'trang web', 'website', 'http', 'www.', '.com', '.vn', '.org', '.net']):
+            return self.handle_website(text)
+        
+        # Default to app handling
+        return self.handle_app(text)
     
     def handle_website(self, text):
         """Xử lý mở website."""
@@ -52,13 +56,13 @@ class AppHandler:
             if not app_name:
                 return "Tôi không hiểu bạn muốn mở ứng dụng nào."
             
-            print(f"[AppHandler] Looking for app: '{app_name}'")
+            logger.debug(f"[AppHandler] Looking for app: '{app_name}'")
             
             # Tìm app trong danh sách đã cài (cache + Start Menu + Registry + deep scan)
             found_name, found_path = self.app_scanner.find_app(app_name)
             
             if found_path:
-                print(f"[AppHandler] Found: '{found_name}' at '{found_path}'")
+                logger.debug(f"[AppHandler] Found: '{found_name}' at '{found_path}'")
                 self._open_app(found_name, found_path)
                 
                 # Log app mở
@@ -72,12 +76,12 @@ class AppHandler:
                 if fuzzy_results:
                     suggestions = [name for name, _, _ in fuzzy_results]
                     suggestion_text = ", ".join(suggestions)
-                    print(f"[AppHandler] Fuzzy suggestions for '{app_name}': {suggestions}")
+                    logger.debug(f"[AppHandler] Fuzzy suggestions for '{app_name}': {suggestions}")
                     
                     # Thử mở luôn kết quả đầu tiên nếu điểm cao (>70)
                     best_name, best_path, best_score = fuzzy_results[0]
                     if best_score >= 70:
-                        print(f"[AppHandler] Auto-opening best match: '{best_name}' (score: {best_score})")
+                        logger.debug(f"[AppHandler] Auto-opening best match: '{best_name}' (score: {best_score})")
                         self._open_app(best_name, best_path)
                         actual_user = self.login_username or self.user_name or "user"
                         log_app_opened(best_name, actual_user)
@@ -86,7 +90,7 @@ class AppHandler:
                     return f"Tôi không tìm thấy '{app_name}'. Có phải bạn muốn mở: {suggestion_text}?"
                 
                 # Fallback cuối: thử dùng Windows Start/Run command
-                print(f"[AppHandler] Not found in cache, trying start command: '{app_name}'")
+                logger.debug(f"[AppHandler] Not found in cache, trying start command: '{app_name}'")
                 try:
                     subprocess.Popen(["start", "", app_name], shell=True)
                     # Log app mở
@@ -94,11 +98,11 @@ class AppHandler:
                     log_app_opened(app_name, actual_user)
                     return f"Tôi đang thử mở {app_name}."
                 except Exception as e:
-                    print(f"[AppHandler] Start command failed: {e}")
+                    logger.error(f"[AppHandler] Start command failed: {e}")
                     return f"Tôi không tìm thấy ứng dụng '{app_name}' trên máy của bạn. Bạn có thể thử lại với tên khác."
             
         except Exception as e:
-            print(f"[AppHandler Error] {e}")
+            logger.error(f"[AppHandler Error] {e}")
             return f"Lỗi khi mở ứng dụng: {str(e)}"
     
     def _open_app(self, app_name, app_path):
@@ -126,7 +130,7 @@ class AppHandler:
                                 break
                 if found_exe:
                     app_path = found_exe
-                    print(f"[AppHandler] Redirected from Update.exe to: {app_path}")
+                    logger.debug(f"[AppHandler] Redirected from Update.exe to: {app_path}")
             
             if app_path.endswith('.lnk'):
                 # Shortcut file
@@ -153,9 +157,9 @@ class AppHandler:
                 # Fallback: thử start file
                 os.startfile(app_path)
         except Exception as e:
-            print(f"[AppHandler] Error opening {app_name}: {e}")
+            logger.error(f"[AppHandler] Error opening {app_name}: {e}")
             # Thử dùng start command như fallback
             try:
                 subprocess.Popen(["start", "", app_name], shell=True)
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"[AppHandler] Start command fallback failed: {e2}")

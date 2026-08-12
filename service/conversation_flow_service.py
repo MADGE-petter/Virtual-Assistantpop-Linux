@@ -8,9 +8,13 @@ from controller.interfaces import (
     ISqlService,
     IUserController,
 )
+from service.alert import AlertManager
 from service.conversation_service import ConversationService
-from service.interactive_alert_service import InteractiveAlertService
 from service.memory_service import MemoryService
+from utils.thread_manager import get_thread_manager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConversationFlowService:
@@ -20,13 +24,13 @@ class ConversationFlowService:
         sql_service: ISqlService,
         action_handler: IActionHandler,
         user_controller: IUserController,
-        interactive_alert_service: Optional[InteractiveAlertService] = None,
+        alert_manager: Optional[AlertManager] = None,
     ):
         self.audio = audio_service
         self.sql = sql_service
         self.actions = action_handler
         self.user = user_controller
-        self.interactive_alert_service = interactive_alert_service
+        self.alert_manager = alert_manager
 
         self._assistant_active = False
         self._session_id: Optional[int] = None
@@ -44,12 +48,12 @@ class ConversationFlowService:
     def start_session(self) -> None:
         user_name = self.user.get_display_name() or "guest"
         self._session_id = self.sql.start_session(user_name)
-        print(f"[ConversationFlowService] Session started: {self._session_id}")
+        logger.info(f"[ConversationFlowService] Session started: {self._session_id}")
 
     def end_session(self) -> None:
         if self._session_id:
             self.sql.end_session(self._session_id)
-            print(f"[ConversationFlowService] Session ended: {self._session_id}")
+            logger.info(f"[ConversationFlowService] Session ended: {self._session_id}")
             self._session_id = None
 
     def run_main_loop(
@@ -58,7 +62,7 @@ class ConversationFlowService:
         on_idle_callback: Optional[Callable] = None,
         idle_timeout: int = 15,
     ) -> None:
-        print("[ConversationFlowService] Main loop starting...")
+        logger.info("[ConversationFlowService] Main loop starting...")
         self._assistant_active = True
         last_interaction = time.time()
 
@@ -95,7 +99,7 @@ class ConversationFlowService:
                 self._process_exchange(user_input)
 
         except Exception as e:
-            print(f"[ConversationFlowService] Error in main loop: {e}")
+            logger.error(f"[ConversationFlowService] Error in main loop: {e}")
             import traceback
 
             traceback.print_exc()
@@ -156,8 +160,8 @@ class ConversationFlowService:
                             uid = self.sql.get_or_create_user(lookup_name)
                             if uid:
                                 user_id = uid
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.error(f"[ConversationFlowService] get_user_id error: {e}")
                     
                     tracker = get_habit_tracker()
                     suggestions = tracker.get_suggestions(user_id)
@@ -172,22 +176,22 @@ class ConversationFlowService:
                             self._pending_habit_app = app_name
                             result[0] = f"Gợi ý: Bạn thường dùng {app_name} vào giờ này ({count} lần gần đây). Có muốn mở không?"
                 except Exception as e:
-                    print(f"[ConversationFlowService] Error getting habit suggestion: {e}")
+                    logger.error(f"[ConversationFlowService] Error getting habit suggestion: {e}")
             
-            thread = threading.Thread(target=_query, daemon=True)
-            thread.start()
+            thread = get_thread_manager("ConversationFlow").start_thread(
+                _query,
+                name="Habit-Suggestion-Query"
+            )
             thread.join(timeout=1.5)  # Timeout 1.5s - không block quá lâu
             
             return result[0]
         except Exception as e:
-            print(f"[ConversationFlowService] Error in _get_habit_suggestion: {e}")
+            logger.error(f"[ConversationFlowService] Error in _get_habit_suggestion: {e}")
             return None
     
     def _speak_habit_suggestion_if_any(self, speak_callback):
         """Nói habit suggestion nếu có, chạy trên thread riêng để không block."""
         try:
-            import threading
-            
             def _query_and_speak():
                 suggestion = self._get_habit_suggestion()
                 if suggestion:
@@ -196,10 +200,12 @@ class ConversationFlowService:
                     else:
                         self.audio.speak(suggestion)
             
-            thread = threading.Thread(target=_query_and_speak, daemon=True)
-            thread.start()
+            get_thread_manager("ConversationFlow").start_thread(
+                _query_and_speak,
+                name="Habit-Suggestion-Speak"
+            )
         except Exception as e:
-            print(f"[ConversationFlowService] Error in _speak_habit_suggestion: {e}")
+            logger.error(f"[ConversationFlowService] Error in _speak_habit_suggestion: {e}")
 
     def stop(self) -> None:
         self._assistant_active = False
@@ -254,10 +260,42 @@ class ConversationFlowService:
         return service.process_exchange(user_input, speak_callback, user_name, session_id)
 
     def _is_interactive_response(self, user_input: str) -> bool:
-        if not self.interactive_alert_service:
+        if not self.alert_manager:
             return False
 
-        return self.interactive_alert_service.try_handle_response(user_input)
+        if not user_input or user_input in ["...", "", None, 0]:
+            return False
+
+        user_input_lower = user_input.lower()
+        interactive_keywords = [
+            "có",
+            "không",
+            "yes",
+            "no",
+            "ok",
+            "ừ",
+            "vâng",
+            "thôi",
+            "bỏ qua",
+            "app",
+            "số",
+            "đóng",
+            "xóa",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+        ]
+
+        for keyword in interactive_keywords:
+            if keyword in user_input_lower:
+                for metric in self.alert_manager.get_active_interactive_metrics():
+                    context = self.alert_manager.get_interactive_context(metric)
+                    self.alert_manager.handle_interactive_response(metric, user_input, context)
+                return True
+
+        return False
 
     def _should_exit(self, user_input: str) -> bool:
         service = self._get_conversation_service()

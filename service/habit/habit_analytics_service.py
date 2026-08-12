@@ -5,6 +5,9 @@ Chịu trách nhiệm thống kê và phân tích dữ liệu thói quen
 """
 
 from typing import Dict, List, Tuple
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HabitAnalyticsService:
@@ -28,14 +31,16 @@ class HabitAnalyticsService:
                 'avg_opens_per_app': round(avg_opens, 1),
                 'top_apps': recent[:5]
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_habit_stats error: {e}")
             return {}
     
     def get_database_stats(self) -> Dict:
         """Get overall database statistics"""
         try:
             return self.repo.get_table_counts()
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_database_stats error: {e}")
             return {}
     
     def get_workflows_stats(self, user_id: int) -> Dict:
@@ -60,7 +65,8 @@ class HabitAnalyticsService:
                 'avg_executions': round(avg_executions, 1),
                 'max_executions': max_executions
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_workflows_stats error: {e}")
             return {}
     
     def get_user_habits(self, user_id: int, min_confidence: float = 0.0) -> List[Dict]:
@@ -81,7 +87,8 @@ class HabitAnalyticsService:
                 })
             
             return habits
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_user_habits error: {e}")
             return []
     
     def get_sequences(self, user_id: int, min_confidence: float = 0.0) -> List[Dict]:
@@ -90,7 +97,8 @@ class HabitAnalyticsService:
             # This would query app_sequences table
             # For now, return empty list
             return []
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_sequences error: {e}")
             return []
     
     def get_workflows(self, user_id: int, min_confidence: float = 0.0) -> List[Dict]:
@@ -109,5 +117,6 @@ class HabitAnalyticsService:
                 })
             
             return workflows
-        except Exception:
+        except Exception as e:
+            logger.error(f"[HabitAnalyticsService] get_workflows error: {e}")
             return []

@@ -7,6 +7,9 @@ import requests
 
 from controller.handlers.base_handler import BaseHandler
 from service.conversation_service import ActionResult
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class WeatherHandler(BaseHandler):
@@ -68,5 +71,6 @@ Trời hôm nay {data['weather'][0]['description']}."""
                 return ActionResult(text=content)
             return ActionResult(text='Không tìm thấy thành phố!')
                 
-        except Exception:
+        except Exception as e:
+            logger.error(f"[WeatherHandler] Error getting weather: {e}")
             return ActionResult(text='Xin lỗi, tôi không thể lấy thông tin thời tiết ngay bây giờ.')

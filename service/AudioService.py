@@ -1,6 +1,9 @@
 import os
 import threading
 import time
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Try to import audio libraries
 try:
@@ -34,20 +37,20 @@ class AudioService:
         self.stt_model = None
         if NEMO_AVAILABLE:
             try:
-                print("[STT] Loading Parakeet-CTC-0.6B-VI...")
+                logger.info("[STT] Loading Parakeet-CTC-0.6B-VI...")
                 self.stt_model = asr.models.ASRModel.from_pretrained(model_name="nvidia/stt_vi_parakeet_ctc_0.6b")
-                print("[STT] Parakeet-CTC loaded successfully")
+                logger.info("[STT] Parakeet-CTC loaded successfully")
             except Exception as e:
-                print(f"[STT] Error loading Parakeet: {e}")
+                logger.error(f"[STT] Error loading Parakeet: {e}")
 
         self.tts_model = None
         if MAGPIE_AVAILABLE:
             try:
-                print("[TTS] Loading Magpie-TTS (Sofia)...")
+                logger.info("[TTS] Loading Magpie-TTS (Sofia)...")
                 self.tts_model = MagpieTTS(voice=MAGPIE_VOICE)
-                print("[TTS] Magpie-TTS loaded successfully")
+                logger.info("[TTS] Magpie-TTS loaded successfully")
             except Exception as e:
-                print(f"[TTS] Error loading Magpie: {e}")
+                logger.error(f"[TTS] Error loading Magpie: {e}")
 
         # "Cửa một chiều": Lock đảm bảo chỉ 1 hướng hoạt động
         self.gate_lock = threading.Lock()
@@ -74,7 +77,7 @@ class AudioService:
             if update_ui and self.view:
                 self.view.update_bot_text(text)
 
-            print(f"[BOT] {text}")
+            logger.info(f"[BOT] {text}")
 
             # Use Magpie-TTS (Local)
             if MAGPIE_AVAILABLE and PLAYSOUND_AVAILABLE and self.tts_model:
@@ -83,7 +86,7 @@ class AudioService:
                     playsound.playsound(audio_path, True)
                     return
                 except Exception as e:
-                    print(f"[Magpie TTS] Error: {e}")
+                    logger.error(f"[Magpie TTS] Error: {e}")
 
             # No TTS available - just wait
             time.sleep(1)
@@ -143,7 +146,7 @@ class AudioService:
                     if text and text.strip():
                         return text
                 except Exception as e:
-                    print(f"[STT Parakeet] Error: {e}")
+                    logger.error(f"[STT Parakeet] Error: {e}")
 
             return "..."
         finally:

@@ -7,6 +7,9 @@ import json
 import re
 from service.agent import Plan, PlanStep, AgentStatus, BaseAgent
 from service.agent.gemma_llm_service import get_gemma_service
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 PLANNER_SYSTEM_PROMPT = """Bạn là Planner Agent của Pop Assistant - trợ lý AI tiếng Việt.
@@ -52,7 +55,7 @@ class PlannerAgent(BaseAgent):
             try:
                 self._gemma_service = get_gemma_service()
             except Exception as e:
-                print(f"[Planner] Failed to load Gemma LLM: {e}")
+                logger.error(f"[Planner] Failed to load Gemma LLM: {e}")
                 return None
         return self._gemma_service
     
@@ -98,7 +101,7 @@ class PlannerAgent(BaseAgent):
             plan_data = self._parse_json(raw_response)
             return self._build_plan(plan_data)
         except Exception as e:
-            print(f"[Planner] LLM error: {e}, using fallback")
+            logger.error(f"[Planner] LLM error: {e}, using fallback")
             return self._fallback_plan(user_request)
     
     def _parse_json(self, raw: str) -> dict:
@@ -108,14 +111,14 @@ class PlannerAgent(BaseAgent):
         if json_match:
             try:
                 return json.loads(json_match.group())
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"[Planner] Error parsing JSON block: {e}")
         
         # Thử parse cả response
         try:
             return json.loads(raw)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"[Planner] Error parsing raw JSON: {e}")
         
         raise ValueError(f"Cannot parse JSON from: {raw[:200]}")
     
@@ -224,7 +227,8 @@ Replan JSON:"""
             raw = self._llm.generate(prompt, max_tokens=512)
             data = self._parse_json(raw)
             return self._build_plan(data)
-        except:
+        except Exception as e:
+            logger.error(f"[Planner] Replan failed: {e}")
             # Fallback: tiếp tục bỏ qua bước lỗi
             new_steps = [s for s in original_plan.steps if s.step_id != failed_step]
             return Plan(
